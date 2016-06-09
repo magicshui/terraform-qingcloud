@@ -54,6 +54,8 @@ func resourceQingcloudInstance() *schema.Resource {
 func resourceQingcloudInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).instance
 
+	// TODO: 判断当前的主机是否是已经关闭的状态？
+
 	params := instance.RunInstancesRequest{}
 	params.InstanceName.Set(d.Get("name").(string))
 	params.ImageID.Set(d.Get("image").(string))

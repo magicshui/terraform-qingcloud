@@ -74,13 +74,20 @@ func resourceQingcloudVolumeCreate(d *schema.ResourceData, meta interface{}) err
 
 	resp, err := clt.CreateVolumes(params)
 	if err != nil {
-		return fmt.Errorf("Error creating volume: %s", err)
+		return err
 	}
+	if len(resp.Volumes) != 1 {
+		return fmt.Errorf("volumes response is not 1")
+	}
+
+	// 设置 ID
 	d.SetId(resp.Volumes[0])
 
+	// 修改硬盘的属性
 	if err := changeQingcloudVolumeAttributes(d, meta); err != nil {
 		return err
 	}
+
 	_, err = VolumeTransitionStateRefresh(clt, d.Id())
 	return err
 }
@@ -95,9 +102,18 @@ func resourceQingcloudVolumeRead(d *schema.ResourceData, meta interface{}) error
 	if err != nil {
 		return err
 	}
+
 	if len(resp.VolumeSet) == 0 {
-		return nil
+		return fmt.Errorf("硬盘已经被删除")
 	}
+
+	d.Set("name", resp.VolumeSet[0].VolumeName)
+	d.Set("description", resp.VolumeSet[0].Description)
+	d.Set("size", resp.VolumeSet[0].Size)
+
+	d.Set("status", resp.VolumeSet[0].Status)
+	d.Set("instance", resp.VolumeSet[0].Instance)
+
 	return nil
 }
 
@@ -110,17 +126,65 @@ func resourceQingcloudVolumeUpdate(d *schema.ResourceData, meta interface{}) err
 
 	// 如果磁盘的大小改变了
 	if d.HasChange("size") {
-		oldSize, newSize := d.GetChange("size")
+		// TODO: 如果其他的状态怎么整？
+		// 判断有没有加载到主机？
+		params := volume.DescribeVolumesRequest{}
+		params.VolumesN.Add(d.Id())
+		params.Verbose.Set(1)
+		resp, err := clt.DescribeVolumes(params)
+		if err != nil {
+			return err
+		}
+		if len(resp.VolumeSet) == 0 {
+			return fmt.Errorf("资源已经被删除")
+		}
+		v := resp.VolumeSet[0]
+
+		// 如果正在使用中
+		if v.Status == "in-use" {
+			params := volume.DetachVolumesRequest{}
+			params.VolumesN.Add(d.Id())
+			params.Instance.Set(v.Instance.InstanceID)
+			_, err := clt.DetachVolumes(params)
+			if err != nil {
+				return err
+			}
+			// 等待
+			_, err = VolumeTransitionStateRefresh(clt, d.Id())
+			return err
+		}
+
 		// 之前 > 现在，那么就不执行操作，错误提示：磁盘大小只能变大，不能缩小
+		oldSize, newSize := d.GetChange("size")
 		if oldSize.(int) > newSize.(int) {
 			d.Set("size", oldSize.(int))
 			return fmt.Errorf("Error you can only increase the size", errors.New("INCREASE SIZE ONLY"))
 		}
 
-		params := volume.ResizeVolumesRequest{}
-		params.VolumesN.Add(d.Id())
-		params.Size.Set(d.Get("size").(int))
-		_, err := clt.ResizeVolumes(params)
+		params2 := volume.ResizeVolumesRequest{}
+		params2.VolumesN.Add(d.Id())
+		params2.Size.Set(d.Get("size").(int))
+		_, err = clt.ResizeVolumes(params2)
+		if err != nil {
+			return err
+		}
+		// 等待
+		_, err = VolumeTransitionStateRefresh(clt, d.Id())
+		return err
+
+		if d.Get("status").(string) == "in-use" {
+			params := volume.AttachVolumesRequest{}
+			params.VolumesN.Add(d.Id())
+			params.Instance.Set(d.Get("instance").(string))
+			_, err := clt.AttachVolumes(params)
+			if err != nil {
+				return err
+			}
+			// 等待
+			_, err = VolumeTransitionStateRefresh(clt, d.Id())
+			return err
+		}
+		// 重新加载到主机上
 		return err
 	}
 
@@ -130,25 +194,48 @@ func resourceQingcloudVolumeUpdate(d *schema.ResourceData, meta interface{}) err
 			return err
 		}
 	}
-
-	return resourceQingcloudVolumeRead(d, meta)
+	_, err := VolumeTransitionStateRefresh(clt, d.Id())
+	return err
 }
 
 func resourceQingcloudVolumeDelete(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).volume
-
-	params := volume.DeleteVolumesRequest{}
+	params := volume.DescribeVolumesRequest{}
 	params.VolumesN.Add(d.Id())
-	_, err := clt.DeleteVolumes(params)
+	params.Verbose.Set(1)
+	resp, err := clt.DescribeVolumes(params)
 	if err != nil {
-		return fmt.Errorf(
-			"Error deleting volume: %s", err)
+		return err
 	}
+	if len(resp.VolumeSet) == 0 {
+		return fmt.Errorf("资源已经被删除")
+	}
+	v := resp.VolumeSet[0]
+	d.Set("status", v.Status)
+
+	// 如果在使用中
+	if v.Status == "in-use" {
+		params := volume.DetachVolumesRequest{}
+		params.VolumesN.Add(d.Id())
+		params.Instance.Set(v.Instance.InstanceID)
+		_, err := clt.DetachVolumes(params)
+		if err != nil {
+			return err
+		}
+		// 等待
+		_, err = VolumeTransitionStateRefresh(clt, d.Id())
+		return err
+	}
+
+	// TODO: 以后再删除资源
+	// params := volume.DeleteVolumesRequest{}
+	// params.VolumesN.Add(d.Id())
+	// _, err := clt.DeleteVolumes(params)
+	// if err != nil {
+	// 	return fmt.Errorf(
+	// 		"Error deleting volume: %s", err)
+	// }
 
 	_, err = VolumeTransitionStateRefresh(clt, d.Id())
-	if err != nil {
-		return fmt.Errorf(
-			"Error waiting for volume (%s) to update: %s", d.Id(), err)
-	}
-	return nil
+	return err
 }
