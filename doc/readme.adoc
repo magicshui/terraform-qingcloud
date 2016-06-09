@@ -31,11 +31,11 @@ provider "qingcloud" {
 
 
 ==  Keypair 密钥
-include::keypair.adoc[]
+include::/keypair.adoc[]
 
 
 ==  Instance 主机
-include::instance.adoc[]
+include::/instance.adoc[]
 
 
 == SecurityGroup 防火墙
@@ -47,4 +47,4 @@ include::instance.adoc[]
 
 
 == Volume 磁盘
-include::volume.adoc[]
+include::/volume.adoc[]
