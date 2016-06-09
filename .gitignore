@@ -29,3 +29,5 @@ _testmain.go
 api.md
 /test-*
 /doc/render
+/debug
+build.sh

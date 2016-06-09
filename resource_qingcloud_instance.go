@@ -19,10 +19,10 @@ func resourceQingcloudInstance() *schema.Resource {
 				Description: "主机名称",
 			},
 			"image": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-				ImageID:  "镜像ID",
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "镜像ID",
 			},
 			"type": &schema.Schema{
 				Type:        schema.TypeString,
@@ -76,7 +76,7 @@ func resourceQingcloudInstanceCreate(d *schema.ResourceData, meta interface{}) e
 
 	params := instance.RunInstancesRequest{}
 	params.InstanceName.Set(d.Get("name").(string))
-	params.ImageId.Set(d.Get("image").(string))
+	params.ImageID.Set(d.Get("image").(string))
 	params.InstanceType.Set(d.Get("type").(string))
 	params.VxnetsN.Add(d.Get("vxnet").(string))
 	params.SecurityGroup.Set(d.Get("security_group").(string))
@@ -135,10 +135,7 @@ func resourceQingcloudInstanceRead(d *schema.ResourceData, meta interface{}) err
 	// 可能有
 	d.Set("eip_id", k.Eip.EipID)
 	d.Set("eip_addr", k.Eip.EipAddr)
-	var keypairs = []schema.NewSet(f, items)
-	for i := 0; i < len(k.KeypairIds); i++ {
-		d.Set("keypairs", value)
-	}
+
 	return nil
 }
 

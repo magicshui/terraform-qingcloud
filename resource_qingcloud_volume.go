@@ -56,9 +56,12 @@ func changeQingcloudVolumeAttributes(d *schema.ResourceData, meta interface{}) e
 	modifyParams.Description.Set(d.Get("description").(string))
 	modifyParams.VolumeName.Set(d.Get("name").(string))
 	_, err := clt.ModifyVolumeAttributes(modifyParams)
-
+	if err != nil {
+		return err
+	}
 	// 等待磁盘状态静止
-	return VolumeTransitionStateRefresh(meta.(*QingCloudClient).volume, d.Id())
+	_, err = VolumeTransitionStateRefresh(meta.(*QingCloudClient).volume, d.Id())
+	return err
 }
 
 func resourceQingcloudVolumeCreate(d *schema.ResourceData, meta interface{}) error {

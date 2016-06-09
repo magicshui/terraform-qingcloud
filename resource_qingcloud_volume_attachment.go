@@ -68,7 +68,7 @@ func resourceQingcloudVolumeAttachmentRead(d *schema.ResourceData, meta interfac
 	return nil
 }
 
-func resourceQingcloudVolumeAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+func resourceQingcloudVolumeAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	return nil
 }

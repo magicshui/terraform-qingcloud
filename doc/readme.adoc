@@ -1,44 +1,52 @@
 = Terraform Qingcloud 文档
 magicshui<shuiyuzhe@gmail.com>
+v0.1,2016-06-10, first version
 
 :sectnums:
 :icons: font
+:y: icon:check[role="green]
+:n: icon:times[role="red"]
+:source-highlighter: pygments
+:pygments-style: manni
+:pygments-linenums-mode: inline
 
-为了使用 Terraform QingCloud ，需要在后台拿到开发者的 API Key，你需要提供如下信息：
+为了使用 Terraform QingCloud ，需要在后台拿到 https://console.qingcloud.com/access_keys/[API 密钥]，你需要提供如下信息：
 
 ----
-variable "id" {
-	default = "yourID"
-}
-
-variable "secret" {
-	default = "yourSecret"
-}
-
-variable "zone" {
-	default = "pek3a"
-}
-
 provider "qingcloud" {
-	id = "${var.id}" // <1>
-	secret = "${var.secret}"  // <2>
-	zone = "${var.zone}"  // <3>
+	id = "yourID" // <1>
+	secret = "yourSecret"  // <2>
+	zone = "zone"  // <3>
 }
 ----
-<1> 密钥的ID
-<2> 密钥
-<3> 可用区
+<1> API 密钥的ID
+<2> 密钥值
+<3> 可用区，参见可用区表<<zones>>
+
+.可用区表
+[[zones]]
+[options="header"]
+|====
+| 名称 | 标识
+| 北京 1 区 | pek1
+| 北京 2 区 | pek2
+| 广东 1 区 | gd1
+| 亚太 1 区 | ap1
+|====
 
 
-==  Keypair 密钥
+
+==  SSH 密钥
+该功能仅对 Linux 主机有效。青云官方提供的 Linux 映像是不允许使用密码来 SSH 登录的， 只接受 SSH 公钥/私钥验证身份。
+
 include::keypair.adoc[]
-
 
 ==  Instance 主机
 include::instance.adoc[]
 
-
 == SecurityGroup 防火墙
+
+
 == EIP 公网IP
 == VXNet 子网
 == Router 路由

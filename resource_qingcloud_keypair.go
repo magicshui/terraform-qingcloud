@@ -18,28 +18,28 @@ func resourceQingcloudKeypair() *schema.Resource {
 				Optional:    true,
 				Description: "密钥名称",
 			},
-			"public_key": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"mode": &schema.Schema{
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: withinArrayString("system", "user"),
-			},
 			"description": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"instance_ids": &schema.Schema{
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
-			"id": &schema.Schema{
+			"public_key": &schema.Schema{
 				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Required: true,
+			},
+			"encrypt": &schema.Schema{
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "ssh-rsa",
+				Description:  "加密算法，有效值为 ssh-rsa 和 ssh-dss，默认为 ssh-rsa。",
+				ValidateFunc: withinArrayString("ssh-rsa", "ssh-dss"),
+			},
+
+			// Computed
+			"id": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "SSH 密钥 ID",
 			},
 		},
 	}
@@ -47,9 +47,14 @@ func resourceQingcloudKeypair() *schema.Resource {
 
 func resourceQingcloudKeypairCreate(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).keypair
+
+	// 创建请求参数
 	params := keypair.CreateKeyPairRequest{}
 	params.KeypairName.Set(d.Get("name").(string))
 	params.PublicKey.Set(d.Get("public_key").(string))
+	params.Mode.Set("user")
+	params.EncryptMethod.Set(d.Get("encrypt").(string))
+
 	result, err := clt.CreateKeyPair(params)
 	if err != nil {
 		return fmt.Errorf("Error create Keypair: %s", err)
@@ -73,18 +78,13 @@ func resourceQingcloudKeypairRead(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	// TODO: 如果密钥不存在?
+	if len(resp.KeypairSet) == 0 {
+		return err
+	}
 
 	kp := resp.KeypairSet[0]
 	d.Set("name", kp.KeypairName)
 	d.Set("description", kp.Description)
-
-	// 获取加载密钥的主机信息？
-	// TODO: 这个时候，是否需要创建一个 k/v 的对？
-	var instanceIDs = make([]string, 0)
-	for _, o := range kp.InstanceIds {
-		instanceIDs = append(instanceIDs, o)
-	}
-	d.Set("instance_ids", instanceIDs)
 
 	return nil
 }

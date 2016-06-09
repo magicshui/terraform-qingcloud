@@ -1,31 +1,68 @@
 === 创建主机
+创建指定配置，指定数量的主机。当你创建主机时，主机会先进入 pending 状态，直到创建完成后，变为 running 状态。
 
+==== 示例
 ----
 resource "qingcloud_instance" "init"{
-	count = 1
-	name = "master-${count.index}"
-	image_id = "centos7x64d" <1>
-	instance_type = "c1m1"
+	count = 1 <1>
+	name = "master-${count.index}" <1>
+	image_id = "centos7x64d" <2>
+	instance_type = "c1m1" <3>
 	instance_class = "0"
 	vxnet_id="vxnet-0"
-	keypair_ids = ["${qingcloud_keypair.arthur.id}"]
+	keypair_ids = ["${qingcloud_keypair.arthur.id}"] <4>
 	security_group_id ="${qingcloud_securitygroup.basic.id}"
 }
 ----
-
-<1> this is a test
-
-.参数
+<1> count 是 `Terraform` 中默认的变量
+<2> 这里的镜像可以是自己制作的镜像或者市场中公用的镜像。
+<3> 青云给主机定义了几种经典配置
++
+----
+广东1区 (GD1), 北京2区 (PEK2), 北京3区 (PEK3A), 亚太1区 (AP1)
 [options="header"]
 |====
-| 名称 | 必选 |  解释
-| name | √ | 名称
-| image | √
-|
-....
-系统镜像ID <1>
-....
+|Instance Type	|CPU Memory| 	Description
+|c1m1	|1核	1G	|1核1G
+|c1m2	|1核	2G	|1核2G
+|c1m4	|1核	4G	|1核4G
+|c2m2	|2核	2G	|2核2G
+|c2m4	|2核	4G	|2核4G
+|c2m8	|2核	8G	|2核8G
+|c4m4	|4核	4G	|4核4G
+|c4m8	|4核	8G	|4核8G
+|c4m16	|4核	16G|	4核16G
+|====
 
+北京1区 (PEK1)
+[options="header"]
+|====
+|Instance Type	|CPU Memory| 	Description
+|small_b	|1核	1G	|小型B
+|small_c	|1核	2G	|小型C
+|medium_a|	2核	2G|	中型A
+|medium_b|	2核	4G|	中型B
+|medium_c|	2核	8G|	中型C
+|large_a	|4核	4G	|大型A
+|large_b	|4核	8G	|大型B
+|large_c	|4核	16G|	大型C
+|====
+----
+
+<4> 需要提前创建密钥，使用密钥ID
+<5> 需要提前创建防火墙
+
+
+.参数
+[options="header",subs=+callouts]
+|====
+| 名称 | 必选 |  解释
+| name | {y} | 名称
+| image| {y}
+a|
+----
+镜像 ID <1>
+----
 |====
 <1> 测试
 

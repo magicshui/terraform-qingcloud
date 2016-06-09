@@ -3,7 +3,7 @@
 **示例**
 ----
 resource "qingcloud_keypair" "arthur"{
-	keypair_name = "arthur"
+	name = "arthur"
 	description = "this is a test keypair"
 	public_key = "${file("~/.ssh/id_rsa.pub")}"   <1>
 }
@@ -11,23 +11,18 @@ resource "qingcloud_keypair" "arthur"{
 
 <1> 可以通过 Terraform 默认带有的函数来读取本地的文件
 
-
 [NOTE]
 ====
-不支持青云的 `mode` 参数，即只能用户手动创建。
+不支持青云创建的方式，只允许用户创建。
 ====
 
 **参数**
 [options="header"]
 |====
 | 名称 | 必选 | 类型
-| name | √ | 密钥对名称
-
-| description
-| x
-| 介绍
-
-| public_key | √ | SSH 公钥内容
+| name | {y} | 密钥对名称
+| description| {n}| 介绍
+| public_key | {y} | SSH 公钥内容
 |====
 
 
@@ -35,7 +30,13 @@ resource "qingcloud_keypair" "arthur"{
 [options="header"]
 |====
 | 名称 | 说明
-| ID | 密钥的 ID <1>
+
+| ID
+a|
+----
+密钥的 ID <1>
+----
+
 |====
 
 <1> 在关联密钥的时候可以使用
@@ -55,7 +56,7 @@ resource "qingcloud_keypair" "arthur"{
 ----
 source "qingcloud_keypair_association" "first"{
   instance = "123123"
-  keypair = ""
+  keypair = "123123123"
 }
 ----
 
@@ -63,9 +64,25 @@ source "qingcloud_keypair_association" "first"{
 [options="header"]
 |====
 | 名称 | 必选 | 解释
-| instance | √ | 主机 ID
-| keypair | √ | 密钥 ID
+| instance | {y} | 主机 ID
+| keypair | {y} | 密钥 ID
 |====
+
+**暴露**
+.
+[options="header"]
+|====
+| 名称 | 说明
+
+|  id
+a|
+----
+关联的ID <1>
+----
+
+|====
+<1> ID 生成的规则是：`keypairId*instanceID`，这个是`Terraform Qingcloud`为了方便管理资源规定的，不是青云的规则。
+
 
 ==== 删除关联
 当关联删除以后，将会将密钥从关联的主机上卸载。

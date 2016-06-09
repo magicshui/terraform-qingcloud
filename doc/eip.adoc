@@ -3,9 +3,9 @@ EIP 是公网IP。
 
 |====
 | 名称 | 必须 | 解释
-| name |  x |
-| need_icp | x  | 是否需要备案
-| bandwidth | √ | 贷款
+| name |  {y} |
+| need_icp | {n}  | 是否需要备案
+| bandwidth | {y} | 贷款
 | | |
 | | |
 |====
