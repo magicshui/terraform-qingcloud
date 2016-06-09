@@ -39,6 +39,12 @@ a|
 
 === 硬盘挂载
 
+----
+resource "qingcloud_volume_attachment" "first"{
+	volume = ""
+	instance = ""
+}
+----
 [WARNING]
 ====
 硬盘只能挂载到一台主机上。
