@@ -25,12 +25,14 @@ func resourceQingcloudVolume() *schema.Resource {
 				Description: "硬盘容量，目前可创建最小 10G，最大 500G 的硬盘， 在此范围内的容量值必须是 10 的倍数	",
 			},
 			"name": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "名称",
 			},
 			"description": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "介绍",
 			},
 			"type": &schema.Schema{
 				Type:     schema.TypeInt,
@@ -54,7 +56,9 @@ func changeQingcloudVolumeAttributes(d *schema.ResourceData, meta interface{}) e
 	modifyParams.Description.Set(d.Get("description").(string))
 	modifyParams.VolumeName.Set(d.Get("name").(string))
 	_, err := clt.ModifyVolumeAttributes(modifyParams)
-	return err
+
+	// 等待磁盘状态静止
+	return VolumeTransitionStateRefresh(meta.(*QingCloudClient).volume, d.Id())
 }
 
 func resourceQingcloudVolumeCreate(d *schema.ResourceData, meta interface{}) error {
@@ -101,22 +105,23 @@ func resourceQingcloudVolumeUpdate(d *schema.ResourceData, meta interface{}) err
 		return nil
 	}
 
+	// 如果磁盘的大小改变了
 	if d.HasChange("size") {
 		oldSize, newSize := d.GetChange("size")
+		// 之前 > 现在，那么就不执行操作，错误提示：磁盘大小只能变大，不能缩小
 		if oldSize.(int) > newSize.(int) {
 			d.Set("size", oldSize.(int))
 			return fmt.Errorf("Error you can only increase the size", errors.New("INCREASE SIZE ONLY"))
 		}
+
 		params := volume.ResizeVolumesRequest{}
 		params.VolumesN.Add(d.Id())
 		params.Size.Set(d.Get("size").(int))
 		_, err := clt.ResizeVolumes(params)
-		if err != nil {
-			return fmt.Errorf("Error resize the volume: %s", err)
-		}
-
+		return err
 	}
 
+	// 其他信息变化
 	if d.HasChange("description") || d.HasChange("name") {
 		if err := changeQingcloudVolumeAttributes(d, meta); err != nil {
 			return err

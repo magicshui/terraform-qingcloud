@@ -1,0 +1,35 @@
+=== 创建主机
+
+----
+resource "qingcloud_instance" "init"{
+	count = 1
+	name = "master-${count.index}"
+	image_id = "centos7x64d" <1>
+	instance_type = "c1m1"
+	instance_class = "0"
+	vxnet_id="vxnet-0"
+	keypair_ids = ["${qingcloud_keypair.arthur.id}"]
+	security_group_id ="${qingcloud_securitygroup.basic.id}"
+}
+----
+
+<1> this is a test
+
+.参数
+[options="header"]
+|====
+| 名称 | 必选 |  解释
+| name | √ | 名称
+| image | √
+|
+....
+系统镜像ID <1>
+....
+
+|====
+<1> 测试
+
+[WARNING]
+====
+count 是系统默认的参数
+====

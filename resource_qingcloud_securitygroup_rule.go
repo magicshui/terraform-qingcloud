@@ -18,8 +18,9 @@ func resourceQingcloudSecuritygroupRule() *schema.Resource {
 				Description: "防火墙 ID",
 			},
 			"name": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "防火墙名称",
 			},
 			"protocol": &schema.Schema{
 				Type:         schema.TypeString,
@@ -30,7 +31,7 @@ func resourceQingcloudSecuritygroupRule() *schema.Resource {
 			"priority": &schema.Schema{
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: withinArrayIntRange(0, 100),
+				ValidateFunc: withinIntRange(0, 100),
 			},
 			"action": &schema.Schema{
 				Type:         schema.TypeString,

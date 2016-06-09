@@ -1,0 +1,76 @@
+=== 创建密钥
+
+**示例**
+----
+resource "qingcloud_keypair" "arthur"{
+	keypair_name = "arthur"
+	description = "this is a test keypair"
+	public_key = "${file("~/.ssh/id_rsa.pub")}"   <1>
+}
+----
+
+<1> 可以通过 Terraform 默认带有的函数来读取本地的文件
+
+
+[NOTE]
+====
+不支持青云的 `mode` 参数，即只能用户手动创建。
+====
+
+**参数**
+[options="header"]
+|====
+| 名称 | 必选 | 类型
+| name | √ | 密钥对名称
+
+| description
+| x
+| 介绍
+
+| public_key | √ | SSH 公钥内容
+|====
+
+
+**暴露值**
+[options="header"]
+|====
+| 名称 | 说明
+| ID | 密钥的 ID <1>
+|====
+
+<1> 在关联密钥的时候可以使用
+
+=== 更新密钥
+只能修改密钥的`name`和`description`。
+
+===  删除密钥
+当密钥被删除之前，将会自动寻找使用此密钥的主机，并从主机进行解绑，所有主机解绑成功以后将会删除密钥。
+
+
+=== 密钥关联
+将密钥和一台主机关联在一起。
+
+**示例**
+[source,json]
+----
+source "qingcloud_keypair_association" "first"{
+  instance = "123123"
+  keypair = ""
+}
+----
+
+**参数**
+[options="header"]
+|====
+| 名称 | 必选 | 解释
+| instance | √ | 主机 ID
+| keypair | √ | 密钥 ID
+|====
+
+==== 删除关联
+当关联删除以后，将会将密钥从关联的主机上卸载。
+
+[NOTE]
+====
+对于创建主机时，使用的密钥，将会需要从主机创建的 Key 上卸载。
+====

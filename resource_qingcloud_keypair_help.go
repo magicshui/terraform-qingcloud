@@ -1,14 +1,11 @@
 package qingcloud
 
 import (
-	"fmt"
-
-	// "github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
-
 	"github.com/magicshui/qingcloud-go/keypair"
 )
 
+// deleteKeypairFromInstance 从相关的主机中删除密钥
 func deleteKeypairFromInstance(meta interface{}, keypairID string, instanceID ...interface{}) error {
 	clt := meta.(*QingCloudClient).keypair
 	params := keypair.DetachKeyPairsRequest{}
@@ -36,6 +33,7 @@ func modifyKeypairAttributes(d *schema.ResourceData, meta interface{}, create bo
 	params := keypair.ModifyKeyPairAttributesRequest{}
 	params.Keypair.Set(d.Id())
 
+	// 创建状态下
 	if create {
 		if description := d.Get("description").(string); description != "" {
 			params.Description.Set(description)
@@ -44,13 +42,10 @@ func modifyKeypairAttributes(d *schema.ResourceData, meta interface{}, create bo
 		if d.HasChange("description") {
 			params.Description.Set(d.Get("description").(string))
 		}
-		if d.HasChange("keypair_name") {
-			params.KeypairName.Set(d.Get("keypair_name").(string))
+		if d.HasChange("name") {
+			params.KeypairName.Set(d.Get("name").(string))
 		}
 	}
 	_, err := clt.ModifyKeyPairAttributes(params)
-	if err != nil {
-		return fmt.Errorf("Error modify keypair description: %s", err)
-	}
-	return nil
+	return err
 }

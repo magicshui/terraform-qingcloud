@@ -2,9 +2,7 @@ package qingcloud
 
 import (
 	"fmt"
-
 	"github.com/hashicorp/terraform/helper/schema"
-
 	"github.com/magicshui/qingcloud-go/securitygroup"
 )
 

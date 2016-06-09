@@ -2,9 +2,7 @@ package qingcloud
 
 import (
 	"fmt"
-	// "log"
 
-	// "github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/magicshui/qingcloud-go/router"
 	"github.com/magicshui/qingcloud-go/vxnet"
@@ -18,8 +16,9 @@ func resourceQingcloudVxnet() *schema.Resource {
 		Delete: resourceQingcloudVxnetDelete,
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "VXNet 的名称",
 			},
 			"type": &schema.Schema{
 				Type:     schema.TypeInt,
@@ -31,6 +30,7 @@ func resourceQingcloudVxnet() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+
 			// 当第一次创建一个私有网络以后，会首先加入到自己定制的router中，不是 vpc
 			"router": &schema.Schema{
 				Type:     schema.TypeString,
@@ -52,7 +52,7 @@ func resourceQingcloudVxnetCreate(d *schema.ResourceData, meta interface{}) erro
 	params.VxnetType.Set(d.Get("type").(int))
 	resp, err := clt.CreateVxnets(params)
 	if err != nil {
-		return fmt.Errorf("Error create security group", err)
+		return fmt.Errorf("Error create security group: %s", err)
 	}
 
 	d.SetId(resp.Vxnets[0])
@@ -60,17 +60,17 @@ func resourceQingcloudVxnetCreate(d *schema.ResourceData, meta interface{}) erro
 		return err
 	}
 	routerID := d.Get("router").(string)
-	if _, err := RouterTransitionStateRefresh(meta.(*QingCloudClient).router, routerID); err != nil {
+	if _, err = RouterTransitionStateRefresh(meta.(*QingCloudClient).router, routerID); err != nil {
 		return err
 	}
 
-	// join the router
-	clt2 := meta.(*QingCloudClient).router
+	// 加入网络
+	cltRouter := meta.(*QingCloudClient).router
 	joinRouterParams := router.JoinRouterRequest{}
 	joinRouterParams.Vxnet.Set(resp.Vxnets[0])
 	joinRouterParams.Router.Set(routerID)
 	joinRouterParams.IpNetwork.Set(d.Get("ip_network").(string))
-	_, err = clt2.JoinRouter(joinRouterParams)
+	_, err = cltRouter.JoinRouter(joinRouterParams)
 	if err != nil {
 		return fmt.Errorf("Error modify vxnet description: %s", err)
 	}
@@ -110,7 +110,7 @@ func resourceQingcloudVxnetDelete(d *schema.ResourceData, meta interface{}) erro
 		if sg.VxnetID == d.Id() {
 			if len(sg.InstanceIds) > 0 {
 				// 只能删除没有主机的私有网络，若删除时仍然有主机在此网络中，会返回错误信息。 可通过 LeaveVxnet 移出主机。
-				return fmt.Errorf("Current vxnet is in using", nil)
+				return fmt.Errorf("Current vxnet is in using: %s", nil)
 			}
 		}
 	}

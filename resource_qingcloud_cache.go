@@ -40,7 +40,7 @@ func resourceQingcloudCache() *schema.Resource {
 			"auto_backup_time": &schema.Schema{
 				Type: schema.TypeInt,
 				Description: "自动备份时间(UTC 的 Hour 部分)，有效值0-23，任何大于23的整型值均表示关闭自动备份，默认值 99	",
-				ValidateFunc: withinArrayIntRange(0, 23),
+				ValidateFunc: withinIntRange(0, 23),
 				Optional:     true,
 			},
 			"cache_class": &schema.Schema{

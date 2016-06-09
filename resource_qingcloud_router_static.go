@@ -28,7 +28,7 @@ func resourceQingcloudRouterStatic() *schema.Resource {
 					static_type=6：三层 GRE 隧道
 					static_type=7：三层 IPsec 隧道
 					static_type=8：私网DNS`,
-				ValidateFunc: withinArrayIntRange(1, 8),
+				ValidateFunc: withinIntRange(1, 8),
 			},
 			"type": &schema.Schema{
 				Type:     schema.TypeInt,

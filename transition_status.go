@@ -1,15 +1,29 @@
 package qingcloud
 
 import (
+	"time"
+
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/magicshui/qingcloud-go/eip"
 	"github.com/magicshui/qingcloud-go/instance"
 	"github.com/magicshui/qingcloud-go/loadbalancer"
 	"github.com/magicshui/qingcloud-go/router"
 	"github.com/magicshui/qingcloud-go/volume"
-	"time"
 )
 
+func transitionStateRefresh(refreshFunc func() (interface{}, string, error), pending, target []string) (interface{}, error) {
+	stateConf := &resource.StateChangeConf{
+		Pending:    pending,
+		Target:     target,
+		Refresh:    refreshFunc,
+		Timeout:    10 * time.Minute,
+		Delay:      10 * time.Second,
+		MinTimeout: 10 * time.Second,
+	}
+	return stateConf.WaitForState()
+}
+
+// LoadbalancerTransitionStateRefresh 刷新 Loadbalancer 的状态，直到状态固定为止
 func LoadbalancerTransitionStateRefresh(clt *loadbalancer.LOADBALANCER, id string) (interface{}, error) {
 	refreshFunc := func() (interface{}, string, error) {
 		params := loadbalancer.DescribeLoadBalancersRequest{}
@@ -22,19 +36,14 @@ func LoadbalancerTransitionStateRefresh(clt *loadbalancer.LOADBALANCER, id strin
 		}
 		return resp.LoadbalancerSet[0], resp.LoadbalancerSet[0].TransitionStatus, nil
 	}
+	pending := []string{"creating", "starting", "stopping", "updating", "suspending", "resuming", "deleting"}
+	target := []string{""}
 
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"creating", "starting", "stopping", "updating", "suspending", "resuming", "deleting"},
-		Target:     []string{""},
-		Refresh:    refreshFunc,
-		Timeout:    10 * time.Minute,
-		Delay:      10 * time.Second,
-		MinTimeout: 10 * time.Second,
-	}
-	return stateConf.WaitForState()
+	return transitionStateRefresh(refreshFunc, pending, target)
+
 }
 
-// Waiting for no transition_status
+// EipTransitionStateRefresh 等待 EIP 状态稳定下来
 func EipTransitionStateRefresh(clt *eip.EIP, id string) (interface{}, error) {
 	refreshFunc := func() (interface{}, string, error) {
 		params := eip.DescribeEipsRequest{}
@@ -48,16 +57,12 @@ func EipTransitionStateRefresh(clt *eip.EIP, id string) (interface{}, error) {
 		return resp.EipSet[0], resp.EipSet[0].TransitionStatus, nil
 	}
 
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"associating", "dissociating", "suspending", "resuming", "releasing"},
-		Target:     []string{""},
-		Refresh:    refreshFunc,
-		Timeout:    10 * time.Minute,
-		Delay:      10 * time.Second,
-		MinTimeout: 10 * time.Second,
-	}
-	return stateConf.WaitForState()
+	pending := []string{"associating", "dissociating", "suspending", "resuming", "releasing"}
+	target := []string{""}
+	return transitionStateRefresh(refreshFunc, pending, target)
+
 }
+
 func VolumeTransitionStateRefresh(clt *volume.VOLUME, id string) (interface{}, error) {
 	refreshFunc := func() (interface{}, string, error) {
 		params := volume.DescribeVolumesRequest{}
@@ -83,6 +88,7 @@ func VolumeTransitionStateRefresh(clt *volume.VOLUME, id string) (interface{}, e
 
 }
 
+// RouterTransitionStateRefresh 等待路由器状态稳定下来
 func RouterTransitionStateRefresh(clt *router.ROUTER, id string) (interface{}, error) {
 	refreshFunc := func() (interface{}, string, error) {
 		params := router.DescribeRoutersRequest{}
@@ -94,17 +100,13 @@ func RouterTransitionStateRefresh(clt *router.ROUTER, id string) (interface{}, e
 		}
 		return resp.RouterSet[0], resp.RouterSet[0].TransitionStatus, nil
 	}
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"creating", "updating", "suspending", "resuming", "poweroffing", "poweroning", "deleting"},
-		Target:     []string{""},
-		Refresh:    refreshFunc,
-		Timeout:    10 * time.Minute,
-		Delay:      10 * time.Second,
-		MinTimeout: 10 * time.Second,
-	}
-	return stateConf.WaitForState()
+
+	pending := []string{"creating", "updating", "suspending", "resuming", "poweroffing", "poweroning", "deleting"}
+	target := []string{""}
+	return transitionStateRefresh(refreshFunc, pending, target)
 }
 
+// InstanceTransitionStateRefresh 等待主机状态稳定下来
 func InstanceTransitionStateRefresh(clt *instance.INSTANCE, id string) (interface{}, error) {
 	refreshFunc := func() (interface{}, string, error) {
 		params := instance.DescribeInstanceRequest{}
@@ -116,13 +118,8 @@ func InstanceTransitionStateRefresh(clt *instance.INSTANCE, id string) (interfac
 		}
 		return resp.InstanceSet[0], resp.InstanceSet[0].TransitionStatus, nil
 	}
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"creating", "updating", "suspending", "resuming", "poweroffing", "poweroning", "deleting"},
-		Target:     []string{""},
-		Refresh:    refreshFunc,
-		Timeout:    10 * time.Minute,
-		Delay:      10 * time.Second,
-		MinTimeout: 10 * time.Second,
-	}
-	return stateConf.WaitForState()
+
+	pending := []string{"creating", "updating", "suspending", "resuming", "poweroffing", "poweroning", "deleting"}
+	target := []string{""}
+	return transitionStateRefresh(refreshFunc, pending, target)
 }

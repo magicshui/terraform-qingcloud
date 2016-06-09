@@ -1,0 +1,50 @@
+= Terraform Qingcloud 文档
+magicshui<shuiyuzhe@gmail.com>
+
+:sectnums:
+:icons: font
+
+为了使用 Terraform QingCloud ，需要在后台拿到开发者的 API Key，你需要提供如下信息：
+
+----
+variable "id" {
+	default = "yourID"
+}
+
+variable "secret" {
+	default = "yourSecret"
+}
+
+variable "zone" {
+	default = "pek3a"
+}
+
+provider "qingcloud" {
+	id = "${var.id}" // <1>
+	secret = "${var.secret}"  // <2>
+	zone = "${var.zone}"  // <3>
+}
+----
+<1> 密钥的ID
+<2> 密钥
+<3> 可用区
+
+
+==  Keypair 密钥
+include::keypair.adoc[]
+
+
+==  Instance 主机
+include::instance.adoc[]
+
+
+== SecurityGroup 防火墙
+== EIP 公网IP
+== VXNet 子网
+== Router 路由
+== LB 负载均衡
+== Redis
+
+
+== Volume 磁盘
+include::volume.adoc[]

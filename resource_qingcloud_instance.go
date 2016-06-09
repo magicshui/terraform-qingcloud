@@ -3,7 +3,6 @@ package qingcloud
 import (
 	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
-
 	"github.com/magicshui/qingcloud-go/instance"
 )
 
@@ -15,46 +14,50 @@ func resourceQingcloudInstance() *schema.Resource {
 		Delete: resourceQingcloudInstanceDelete,
 		Schema: map[string]*schema.Schema{
 			"name": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "主机名称",
 			},
-			"image_id": &schema.Schema{
+			"image": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+				ImageID:  "镜像ID",
 			},
-			"instance_type": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
+			"type": &schema.Schema{
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "主机类型",
 			},
-			"instance_class": &schema.Schema{
+			"class": &schema.Schema{
 				Type:     schema.TypeString,
 				Default:  "0",
 				Optional: true,
 				ForceNew: true,
+				Description: "主机性能类型: 性能型:0 ,超高性能型:1	",
+				ValidateFunc: withinArrayString("0", "1"),
 			},
-			"vxnet_id": &schema.Schema{
+			"vxnet": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"keypair_ids": &schema.Schema{
+			"security_group": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"keypairs": &schema.Schema{
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Set:      schema.HashString,
 				Computed: true,
 			},
-			"security_group_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"vxnet_name": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
-			},
+
+			// 如下是计算处理的结果，不需要手工设置
 			"private_ip": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "",
 			},
 			"eip_id": &schema.Schema{
 				Type:     schema.TypeString,
@@ -73,21 +76,26 @@ func resourceQingcloudInstanceCreate(d *schema.ResourceData, meta interface{}) e
 
 	params := instance.RunInstancesRequest{}
 	params.InstanceName.Set(d.Get("name").(string))
-	params.ImageId.Set(d.Get("image_id").(string))
-	params.InstanceType.Set(d.Get("instance_type").(string))
+	params.ImageId.Set(d.Get("image").(string))
+	params.InstanceType.Set(d.Get("type").(string))
+	params.VxnetsN.Add(d.Get("vxnet").(string))
+	params.SecurityGroup.Set(d.Get("security_group").(string))
+	params.InstanceClass.Set(d.Get("class").(string))
+
+	// 设置登陆的密钥
+	// 这个地方需要确认一下，就是如果以后这个值变化了，那么是否需要保留？
 	params.LoginMode.Set("keypair")
-	params.VxnetsN.Add(d.Get("vxnet_id").(string))
-	params.SecurityGroup.Set(d.Get("security_group_id").(string))
-	for _, kp := range d.Get("keypair_ids").(*schema.Set).List() {
+	for _, kp := range d.Get("keypairs").(*schema.Set).List() {
 		params.LoginKeypair.Set(kp.(string))
 	}
-	params.InstanceClass.Set(d.Get("instance_class").(string))
 
 	resp, err := clt.RunInstances(params)
 	if err != nil {
 		return fmt.Errorf("Error run instance :%s", err)
 	}
 	d.SetId(resp.Instances[0])
+
+	// 等机器完成配置
 	if _, err := InstanceTransitionStateRefresh(clt, d.Id()); err != nil {
 		return err
 	}
@@ -102,27 +110,35 @@ func resourceQingcloudInstanceRead(d *schema.ResourceData, meta interface{}) err
 	params.Verbose.Set(1)
 	resp, err := clt.DescribeInstances(params)
 	if err != nil {
-		return fmt.Errorf("Descirbe Instance :%s", err)
+		return fmt.Errorf("[ERROR] Descirbe Instance :%s", err)
 	}
 
-	// TODO: if this is nil
+	if len(resp.InstanceSet) == 0 {
+		return fmt.Errorf("[ERROR] Instance: %s not found", d.Id())
+	}
+	if len(resp.InstanceSet) == 0 {
+		return fmt.Errorf("[ERROR] Instance: %s Vxnet: %s not found", d.Id(), d.Get("vxnet").(string))
+	}
+
 	k := resp.InstanceSet[0]
-	// TODO: not setting the default value
-	d.Set("instance_type", k.InstanceType)
-	if len(k.Vxnets) >= 1 {
-		d.Set("vxnet_name", k.Vxnets[0].VxnetName)
-		d.Set("vxnet_id", k.Vxnets[0].VxnetID)
-		d.Set("private_ip", k.Vxnets[0].PrivateIP)
-	}
-	d.Set("eip_addr", k.Eip.EipAddr)
 
-	// d.Set("eip_id", k.Eip.EipID)
-	// instanceKeypairsId := make([]string, 0, len(k.KeypairIds))
-	// for _, kp := range k.KeypairIds {
-	// 	instanceKeypairsId = append(instanceKeypairsId, kp)
-	// }
-	// d.Set("keypair_ids", instanceKeypairsId)
-	// d.Set("security_group_id", k.SecurityGroup.SecurityGroupID)
+	// TODO: not setting the default value
+	d.Set("type", k.InstanceType)
+	d.Set("class", k.InstanceClass)
+	d.Set("name", k.InstanceName)
+	d.Set("image", k.Image.ImageID)
+
+	d.Set("vxnet", k.Vxnets[0].VxnetID)
+	d.Set("vxnet_name", k.Vxnets[0].VxnetName)
+	d.Set("private_ip", k.Vxnets[0].PrivateIP)
+
+	// 可能有
+	d.Set("eip_id", k.Eip.EipID)
+	d.Set("eip_addr", k.Eip.EipAddr)
+	var keypairs = []schema.NewSet(f, items)
+	for i := 0; i < len(k.KeypairIds); i++ {
+		d.Set("keypairs", value)
+	}
 	return nil
 }
 

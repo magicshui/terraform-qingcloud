@@ -18,9 +18,12 @@ func resourceQingcloudMongo() *schema.Resource {
 				Description: "私有网络 ID	",
 			},
 			"version": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  "3.0",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "3.0",
+				Description: "版本号",
+				// TODO: 添加所有的版本号
+				ValidateFunc: withinArrayString("3.0"),
 			},
 			"type": &schema.Schema{
 				Type:     schema.TypeString,
@@ -32,6 +35,8 @@ func resourceQingcloudMongo() *schema.Resource {
 				Type:     schema.TypeInt,
 				Required: true,
 				Description: "Mongo 存储容量(GB)，用于存放数据和日志，最小10G，最大1000G	",
+				// TODO: 10的倍数
+				// ...
 			},
 			"name": &schema.Schema{
 				Type:        schema.TypeString,
@@ -39,13 +44,14 @@ func resourceQingcloudMongo() *schema.Resource {
 				Description: "名称",
 			},
 			"description": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "description",
 			},
 			"auto_backup_time": &schema.Schema{
 				Type: schema.TypeInt,
 				Description: "自动备份时间(UTC 的 Hour 部分)，有效值0-23，任何大于23的整型值均表示关闭自动备份，默认值 99	",
-				ValidateFunc: withinArrayIntRange(0, 23),
+				ValidateFunc: withinIntRange(0, 23),
 				Optional:     true,
 			},
 

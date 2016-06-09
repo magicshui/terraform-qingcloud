@@ -38,9 +38,11 @@ func resourceQingcloudRouter() *schema.Resource {
 			},
 
 			"description": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "介绍",
 			},
+
 			"private_ip": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,

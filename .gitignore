@@ -28,3 +28,4 @@ _testmain.go
 /provider-qingcloud/provider-qingcloud
 api.md
 /test-*
+/doc/render
