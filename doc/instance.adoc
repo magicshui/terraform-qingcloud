@@ -6,12 +6,11 @@
 resource "qingcloud_instance" "init"{
 	count = 1 <1>
 	name = "master-${count.index}" <1>
-	image_id = "centos7x64d" <2>
-	instance_type = "c1m1" <3>
-	instance_class = "0"
-	vxnet_id="vxnet-0"
-	keypair_ids = ["${qingcloud_keypair.arthur.id}"] <4>
-	security_group_id ="${qingcloud_securitygroup.basic.id}"
+	description = "this is a test"
+	image = "centos7x64d" <2>
+	type = "c1m1" <3>
+	class = "0"
+	init_keypair = ["${qingcloud_keypair.arthur.id}"] <4>
 }
 ----
 <1> count 是 `Terraform` 中默认的变量
@@ -63,6 +62,10 @@ a|
 ----
 镜像 ID <1>
 ----
+| description | {n} | 描述
+| init_keypair | {y} | 初始化的 ssh 密钥
+| type | {y} | 类型
+| class | {y} | 高性能 0 或者超高性能 1
 |====
 <1> 测试
 
@@ -70,3 +73,6 @@ a|
 ====
 count 是系统默认的参数
 ====
+
+=== 停用主机
+为了防止误删除，没有实现删除主机的选项，只能停用主机。

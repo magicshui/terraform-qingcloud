@@ -90,16 +90,14 @@ func resourceQingcloudKeypairAttachRead(d *schema.ResourceData, meta interface{}
 			log.Printf("[QC]  found instance: %s", v)
 			return nil
 		}
-		d.SetId("")
 	}
+	// 如果没有找到，那么就重新生成
+	d.SetId("")
 	return nil
 }
 
+// 资源不能更新
 func resourceQingcloudKeypairAttachUpdate(d *schema.ResourceData, meta interface{}) error {
-	// if _, n := d.GetChange("need_recreate"); n.(bool) {
-	// 	log.Printf("[DEBUG]resourceQingcloudKeypairAttachUpdate recreate ")
-	// 	return resourceQingcloudKeypairCreate(d, meta)
-	// }
 	return nil
 }
 

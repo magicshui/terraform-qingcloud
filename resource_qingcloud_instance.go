@@ -18,11 +18,16 @@ func resourceQingcloudInstance() *schema.Resource {
 				Required:    true,
 				Description: "主机名称",
 			},
-			"image": &schema.Schema{
+			"description": &schema.Schema{
 				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-				Description: "镜像ID",
+				Optional:    true,
+				Description: "描述信息",
+			},
+			"image": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+				Description: "映像ID，此映像将作为主机的模板。可传青云提供的映像ID，或自己创建的映像ID	",
 			},
 			"type": &schema.Schema{
 				Type:        schema.TypeString,
@@ -37,35 +42,10 @@ func resourceQingcloudInstance() *schema.Resource {
 				Description: "主机性能类型: 性能型:0 ,超高性能型:1	",
 				ValidateFunc: withinArrayString("0", "1"),
 			},
-			"vxnet": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"security_group": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"keypairs": &schema.Schema{
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Set:      schema.HashString,
-				Computed: true,
-			},
-
-			// 如下是计算处理的结果，不需要手工设置
-			"private_ip": &schema.Schema{
+			"init_keypair": &schema.Schema{
 				Type:        schema.TypeString,
-				Computed:    true,
-				Description: "",
-			},
-			"eip_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"eip_addr": &schema.Schema{
-				Type:     schema.TypeString,
-				Computed: true,
+				Required:    true,
+				Description: "初始化的密钥",
 			},
 		},
 	}
@@ -78,28 +58,44 @@ func resourceQingcloudInstanceCreate(d *schema.ResourceData, meta interface{}) e
 	params.InstanceName.Set(d.Get("name").(string))
 	params.ImageID.Set(d.Get("image").(string))
 	params.InstanceType.Set(d.Get("type").(string))
-	params.VxnetsN.Add(d.Get("vxnet").(string))
-	params.SecurityGroup.Set(d.Get("security_group").(string))
 	params.InstanceClass.Set(d.Get("class").(string))
-
-	// 设置登陆的密钥
-	// 这个地方需要确认一下，就是如果以后这个值变化了，那么是否需要保留？
+	params.LoginKeypair.Set(d.Get("init_keypair").(string))
 	params.LoginMode.Set("keypair")
-	for _, kp := range d.Get("keypairs").(*schema.Set).List() {
-		params.LoginKeypair.Set(kp.(string))
-	}
 
 	resp, err := clt.RunInstances(params)
 	if err != nil {
-		return fmt.Errorf("Error run instance :%s", err)
+		return err
 	}
+	if len(resp.Instances) != 1 {
+		return fmt.Errorf("[QC] instance error,not 1, real is : %d", len(resp.Instances))
+	}
+
 	d.SetId(resp.Instances[0])
 
 	// 等机器完成配置
-	if _, err := InstanceTransitionStateRefresh(clt, d.Id()); err != nil {
+	_, err = InstanceTransitionStateRefresh(clt, d.Id())
+	if err != nil {
 		return err
 	}
-	return resourceQingcloudInstanceRead(d, meta)
+
+	// 更新description
+	if d.Get("description").(string) != "" {
+		params := instance.ModifyInstanceAttributesRequest{}
+		params.Instance.Set(d.Id())
+		params.InstanceName.Set(d.Get("name").(string))
+		params.Description.Set(d.Get("description").(string))
+		_, err := clt.ModifyInstanceAttributes(params)
+		if err != nil {
+			return err
+		}
+		// 等机器完成配置
+		_, err = InstanceTransitionStateRefresh(clt, d.Id())
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func resourceQingcloudInstanceRead(d *schema.ResourceData, meta interface{}) error {
@@ -110,49 +106,104 @@ func resourceQingcloudInstanceRead(d *schema.ResourceData, meta interface{}) err
 	params.Verbose.Set(1)
 	resp, err := clt.DescribeInstances(params)
 	if err != nil {
-		return fmt.Errorf("[ERROR] Descirbe Instance :%s", err)
+		return err
 	}
 
 	if len(resp.InstanceSet) == 0 {
 		return fmt.Errorf("[ERROR] Instance: %s not found", d.Id())
 	}
-	if len(resp.InstanceSet) == 0 {
-		return fmt.Errorf("[ERROR] Instance: %s Vxnet: %s not found", d.Id(), d.Get("vxnet").(string))
-	}
 
 	k := resp.InstanceSet[0]
 
-	// TODO: not setting the default value
 	d.Set("type", k.InstanceType)
 	d.Set("class", k.InstanceClass)
 	d.Set("name", k.InstanceName)
 	d.Set("image", k.Image.ImageID)
 
-	d.Set("vxnet", k.Vxnets[0].VxnetID)
-	d.Set("vxnet_name", k.Vxnets[0].VxnetName)
-	d.Set("private_ip", k.Vxnets[0].PrivateIP)
+	d.Set("status", k.Status)
 
-	// 可能有
-	d.Set("eip_id", k.Eip.EipID)
-	d.Set("eip_addr", k.Eip.EipAddr)
+	d.SetId(k.InstanceID)
 
 	return nil
 }
 
+// TODO: 如果机器资源更新了？
 func resourceQingcloudInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+
+	clt := meta.(*QingCloudClient).instance
+	if d.HasChange("name") || d.HasChange("description") {
+		params := instance.ModifyInstanceAttributesRequest{}
+		params.Instance.Set(d.Id())
+		params.InstanceName.Set(d.Get("name").(string))
+		params.Description.Set(d.Get("description").(string))
+		_, err := clt.ModifyInstanceAttributes(params)
+		return err
+	}
+
+	// TODO: 主机运行状态？
+
+	// 改变类型
+	if d.HasChange("type") {
+		// 如果主机在运行中，首先对主机进行关机操作
+		if d.Get("status") == "running" {
+			params := instance.StopInstancesRequest{}
+			params.InstancesN.Add(d.Id())
+			_, err := clt.StopInstances(params)
+			if err != nil {
+				return err
+			}
+		}
+
+		// 等待操作完成
+		_, err := InstanceTransitionStateRefresh(clt, d.Id())
+		if err != nil {
+			return err
+		}
+
+		params2 := instance.ResizeInstancesRequest{}
+		params2.InstancesN.Add(d.Id())
+		params2.InstanceType.Set(d.Get("type").(string))
+		_, err = clt.ResizeInstances(params2)
+		if err != nil {
+			return err
+		}
+
+		// 开启主机
+		params3 := instance.StartInstancesRequest{}
+		params3.InstancesN.Add(d.Id())
+		_, err = clt.StartInstances(params3)
+		if err != nil {
+			return err
+		}
+
+		// 等待操作完成
+		_, err = InstanceTransitionStateRefresh(clt, d.Id())
+		if err != nil {
+			return err
+		}
+
+	}
+
+	if d.HasChange("class") || d.HasChange("image") {
+		return fmt.Errorf("Can't change class or type or image")
+	}
+
+	// 其他改变不能生效
 	return nil
 }
 
 func resourceQingcloudInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).instance
 
+	// 删除依赖的资源
 	params := instance.StopInstancesRequest{}
 	params.InstancesN.Add(d.Id())
 	params.Force.Set(1)
 
 	_, err := clt.StopInstances(params)
 	if err != nil {
-		return fmt.Errorf("Error run instance :%s", err)
+		return err
 	}
-	return nil
+	_, err = InstanceTransitionStateRefresh(clt, d.Id())
+	return err
 }
