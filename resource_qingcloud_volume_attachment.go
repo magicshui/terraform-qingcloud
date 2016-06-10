@@ -10,19 +10,23 @@ func resourceQingcloudVolumeAttachment() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceQingcloudVolumeAttachmentCreate,
 		Read:   resourceQingcloudVolumeAttachmentRead,
-		Update: nil,
+		Update: resourceQingcloudVolumeAttachmentUpdate,
 		Delete: resourceQingcloudVolumeAttachmentDelete,
 		Schema: map[string]*schema.Schema{
 			"instance": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "主机 ID",
 			},
 			"volume": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "磁盘 ID",
 			},
+
+			// 自动计算
 			"id": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,

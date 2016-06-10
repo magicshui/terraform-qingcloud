@@ -42,6 +42,8 @@ func resourceQingcloudInstance() *schema.Resource {
 				Description: "主机性能类型: 性能型:0 ,超高性能型:1	",
 				ValidateFunc: withinArrayString("0", "1"),
 			},
+
+			// TODO: 加入 terminate 属性？
 			"init_keypair": &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
