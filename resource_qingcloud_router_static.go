@@ -115,6 +115,7 @@ func resourceQingcloudRouterStaticCreate(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return err
 	}
+
 	d.SetId(resp.RouterStatics[0])
 	return applyRouterUpdates(meta, d.Get("router").(string))
 }

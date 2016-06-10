@@ -63,6 +63,11 @@ func resourceQingcloudVxnetRead(d *schema.ResourceData, meta interface{}) error 
 	if err != nil {
 		return fmt.Errorf("Error retrieving vxnets: %s", err)
 	}
+
+	if len(resp.VxnetSet) != 1 {
+		return fmt.Errorf("资源可能被删除了")
+	}
+
 	sg := resp.VxnetSet[0]
 	d.Set("name", sg.VxnetName)
 	d.Set("description", sg.Description)

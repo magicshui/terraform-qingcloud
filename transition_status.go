@@ -9,6 +9,7 @@ import (
 	"github.com/magicshui/qingcloud-go/instance"
 	"github.com/magicshui/qingcloud-go/loadbalancer"
 	"github.com/magicshui/qingcloud-go/router"
+	"github.com/magicshui/qingcloud-go/securitygroup"
 	"github.com/magicshui/qingcloud-go/volume"
 )
 
@@ -22,6 +23,33 @@ func transitionStateRefresh(refreshFunc func() (interface{}, string, error), pen
 		MinTimeout: 5 * time.Second,
 	}
 	return stateConf.WaitForState()
+}
+
+func SecurityGroupTransitionStateRefresh(clt *securitygroup.SECURITYGROUP, id string) (interface{}, error) {
+	refreshFunc := func() (interface{}, string, error) {
+		params := securitygroup.DescribeSecurityGroupsRequest{}
+		params.Verbose.Set(1)
+		params.SecurityGroupsN.Add(id)
+		resp, err := clt.DescribeSecurityGroups(params)
+		if err != nil {
+			return nil, "", err
+		}
+
+		if resp.TotalCount != 1 {
+			return nil, "", fmt.Errorf("SG not found: %s", id)
+		}
+		return resp.SecurityGroupSet[0], string(resp.SecurityGroupSet[0].IsApplied), nil
+	}
+	stateConf := &resource.StateChangeConf{
+		Pending:    []string{"0"},
+		Target:     []string{"1"},
+		Refresh:    refreshFunc,
+		Timeout:    10 * time.Minute,
+		Delay:      5 * time.Second,
+		MinTimeout: 5 * time.Second,
+	}
+	return stateConf.WaitForState()
+
 }
 
 // LoadbalancerTransitionStateRefresh 刷新 Loadbalancer 的状态，直到状态固定为止

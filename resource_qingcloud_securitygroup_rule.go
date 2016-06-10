@@ -3,6 +3,7 @@ package qingcloud
 import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/magicshui/qingcloud-go/securitygroup"
+	"log"
 )
 
 func resourceQingcloudSecuritygroupRule() *schema.Resource {
@@ -45,12 +46,12 @@ func resourceQingcloudSecuritygroupRule() *schema.Resource {
 				ValidateFunc: withinArrayInt(0, 1),
 			},
 			"val1": &schema.Schema{
-				Type:     schema.TypeString,
+				Type:     schema.TypeInt,
 				Optional: true,
 				Description: "如果协议为 tcp 或 udp，此值表示起始端口。 如果协议为 icmp，此值表示 ICMP 类型。 其他协议无需此值。	",
 			},
 			"val2": &schema.Schema{
-				Type:     schema.TypeString,
+				Type:     schema.TypeInt,
 				Optional: true,
 				Description: "如果协议为 tcp 或 udp，此值表示结束端口。 如果协议为 icmp，此值表示 ICMP 代码。 其他协议无需此值。	",
 			},
@@ -72,16 +73,20 @@ func resourceQingcloudSecuritygroupRuleCreate(d *schema.ResourceData, meta inter
 	params.RulesNSecurityGroupRuleName.Add(d.Get("name").(string))
 	params.RulesNAction.Add(d.Get("action").(string))
 	params.RulesNDirection.Add(int64(d.Get("direction").(int)))
-	params.RulesNVal1.Add(d.Get("val1").(string))
-	params.RulesNVal2.Add(d.Get("val2").(string))
+
+	log.Printf("SG RESULT: %#v", d.Get("val1").(int))
+
+	params.RulesNVal1.Add(int64(d.Get("val1").(int)))
+	params.RulesNVal2.Add(int64(d.Get("val2").(int)))
 	params.RulesNVal3.Add(d.Get("val3").(string))
 	resp, err := clt.AddSecurityGroupRules(params)
 	if err != nil {
 		return err
 	}
 	d.SetId(resp.SecurityGroupRules[0])
-	return nil
+	return applySecurityGroupUpdates(meta, d.Get("securitygroup").(string))
 }
+
 func resourceQingcloudSecuritygroupRuleRead(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).securitygroup
 	params := securitygroup.DescribeSecurityGroupRulesRequest{}
@@ -102,7 +107,25 @@ func resourceQingcloudSecuritygroupRuleRead(d *schema.ResourceData, meta interfa
 }
 
 func resourceQingcloudSecuritygroupRuleUpdate(d *schema.ResourceData, meta interface{}) error {
-	return nil
+	clt := meta.(*QingCloudClient).securitygroup
+	params := securitygroup.ModifySecurityGroupRuleAttributesRequest{}
+	params.SecurityGroupRule.Set(d.Id())
+	params.SecurityGroupRuleName.Set(d.Get("name").(string))
+
+	params.Priority.Set(d.Get("priority").(int))
+	params.RuleAction.Set(d.Get("action").(string))
+	params.Direction.Set(d.Get("direction").(int))
+	params.Protocol.Set(d.Get("protocol").(string))
+	params.Val1.Set(d.Get("val1").(int))
+	params.Val2.Set(d.Get("val2").(int))
+	params.Val3.Set(d.Get("val3").(string))
+
+	_, err := clt.ModifySecurityGroupRuleAttributes(params)
+	if err != nil {
+		return err
+	}
+
+	return applySecurityGroupUpdates(clt, d.Get("securitygroup").(string))
 }
 
 func resourceQingcloudSecuritygroupRuleDelete(d *schema.ResourceData, meta interface{}) error {
@@ -113,6 +136,5 @@ func resourceQingcloudSecuritygroupRuleDelete(d *schema.ResourceData, meta inter
 	if err != nil {
 		return err
 	}
-	d.SetId("")
-	return nil
+	return applySecurityGroupUpdates(clt, d.Get("securitygroup").(string))
 }

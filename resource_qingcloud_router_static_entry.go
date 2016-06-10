@@ -2,8 +2,6 @@ package qingcloud
 
 import (
 	"fmt"
-	"log"
-
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/magicshui/qingcloud-go/router"
 )
@@ -47,8 +45,6 @@ func resourceQingcloudRouterStaticEntry() *schema.Resource {
 func resourceQingcloudRouterStaticEntryCreate(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).router
 
-	log.Printf("Enter RS Create")
-
 	params := router.AddRouterStaticEntriesRequest{}
 	params.RouterStatic.Set(d.Get("router_static").(string))
 	params.EntriesNVal1.Add(d.Get("val1").(string))
@@ -62,17 +58,14 @@ func resourceQingcloudRouterStaticEntryCreate(d *schema.ResourceData, meta inter
 		return fmt.Errorf("资源不存在")
 	}
 
-	log.Printf("RS: %v", resp)
-
 	d.SetId(resp.RouterStaticEntries[0])
-
 	return applyRouterUpdates(meta, d.Get("router").(string))
 }
 
 func resourceQingcloudRouterStaticEntryRead(d *schema.ResourceData, meta interface{}) error {
-	clt := meta.(*QingCloudClient).router
+	// NOTICE: 青云的这个请求有 bug，使用了 EntryID 但是返回了所有的数据
 
-	log.Printf("Enter RS Create")
+	clt := meta.(*QingCloudClient).router
 
 	params := router.DescribeRouterStaticEntriesRequest{}
 	params.RouterStaticEntryID.Set(d.Id())
@@ -85,12 +78,12 @@ func resourceQingcloudRouterStaticEntryRead(d *schema.ResourceData, meta interfa
 		return fmt.Errorf("资源不存在")
 	}
 
-	log.Printf("RS: %v", resp)
+	for _, v := range resp.RouterStaticEntrySet {
+		if v.RouterID == d.Id() {
+			d.Set("val1", v.Val1)
+		}
+	}
 
-	rs := resp.RouterStaticEntrySet[0]
-	d.Set("router_static", rs.RouterStaticID)
-	d.Set("val1", rs.Val1)
-	d.Set("val2", rs.Val2)
 	return nil
 }
 
