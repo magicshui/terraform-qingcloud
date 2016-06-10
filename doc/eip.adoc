@@ -1,6 +1,17 @@
 === 创建 EIP
 EIP 是公网IP。
 
+----
+resource "qingcloud_eip" "first" {
+  name        = "first"
+  description = "this is a  test"
+  need_icp    = 1
+  bandwidth   = 1
+}
+----
+
+.参数
+[options="header"]
 |====
 | 名称 | 必须 | 解释
 | name |  {y} | EIP
@@ -8,4 +19,24 @@ EIP 是公网IP。
 | bandwidth | {y} | 带宽
 | billing_mode | {n} | 公网IP计费模式：bandwidth 按带宽计费，traffic 按流量计费，默认是 bandwidth
 | need_icp | {n} | 是否需要备案，1为需要，0为不需要，默认是0
+|====
+
+
+=== 绑定公网 IP
+
+----
+resource "qingcloud_eip_associate" "first" {
+  eip      = "${qingcloud_eip.first.id}"
+  resource = "${qingcloud_instance.first.id}" <1>
+}
+----
+
+<1> 只能绑定到主机和路由器上。
+
+.参数
+[options="header"]
+|====
+| 名称 | 必须 | 解释
+| eip |  {y} | EIP ID
+| resource | {n}  | 资源 ID
 |====

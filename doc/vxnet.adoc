@@ -1,0 +1,17 @@
+=== 创建子网
+
+----
+resource "qingcloud_vxnet" "first" {
+  name        = "what"
+  description = "change test"
+  type        = 1
+}
+----
+
+.参数
+|====
+| 参数 | 必须 | 解释
+| name | {y} | 名称
+| description | {n} | 描述
+| type | {y} | 1 - 受管，0 - 自管
+|====

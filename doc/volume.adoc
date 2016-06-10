@@ -1,7 +1,12 @@
 === 硬盘创建
 
 ----
-
+resource "qingcloud_volume" "first" {
+  name        = "fist"
+  description = "hahah 1312312"
+  size        = 50
+  type        = 0
+}
 ----
 
 .参数
@@ -28,6 +33,7 @@ a|
 
 === 硬盘更改
 
+
 [WARNING]
 ====
 硬盘扩容的时候，需要先解绑才能扩容。
@@ -40,9 +46,9 @@ a|
 === 硬盘挂载
 
 ----
-resource "qingcloud_volume_attachment" "first"{
-	volume = ""
-	instance = ""
+resource "qingcloud_volume_attachment" "first" {
+  instance = "${qingcloud_instance.first.id}"
+  volume   = "${qingcloud_volume.first.id}"
 }
 ----
 [WARNING]

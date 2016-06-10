@@ -1,0 +1,48 @@
+=== 创建防火墙
+
+----
+resource "qingcloud_securitygroup" "first" {
+  name        = "hello"
+  description = "fir"
+}
+----
+
+
+.参数
+|====
+| 名称 | 必须 | 解释
+| name | {y} | 名称
+| description | {y} | 描述
+|====
+
+
+=== 创建防火墙规则
+
+----
+resource "qingcloud_securitygroup_rule" "first" {
+  securitygroup = "${qingcloud_securitygroup.first.id}" <1>
+  name          = "first"
+  protocol      = "tcp"
+  priority      = 1
+  action        = "accept"
+  direction     = "0"
+  val1          = 10
+  val2          = 12
+  val3          = "192.11.11.1"
+}
+----
+
+
+.参数
+|====
+| 名称 | 必须 | 解释
+| name | {y} | 名称
+| securitygroup | {y} | 防火墙 ID
+| protocol | {y}   | 协议，目前支持 tcp, udp, icmp, gre, esp, ah, ipip
+| priority | {y}   | 优先级，由高到低为 0 - 100
+| action | {y}   | 操作，支持 accept (接受) 或 drop (拒绝)
+| direction | {y}  | 方向，0 表示下行，1 表示上行。默认为 0。
+|  val1 |  {n}  | 如果协议为 tcp 或 udp，此值表示起始端口。 如果协议为 icmp，此值表示 ICMP 类型。 其他协议无需此值。
+|  val2 | {n}  | 如果协议为 tcp 或 udp，此值表示结束端口。 如果协议为 icmp，此值表示 ICMP 代码。 其他协议无需此值。
+|  val3 | {n}  | 目标 IP，如果填写，则这条防火墙规则只对此IP（或IP段）有效。
+|====

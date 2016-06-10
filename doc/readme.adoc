@@ -2,9 +2,13 @@
 magicshui<shuiyuzhe@gmail.com>
 v0.1,2016-06-10, first version
 
+
+:toc:
+
+
 :sectnums:
 :icons: font
-:y: icon:check[role="green]
+:y: icon:check[role="green"]
 :n: icon:times[role="red"]
 :source-highlighter: pygments
 :pygments-style: manni
@@ -29,10 +33,11 @@ provider "qingcloud" {
 | 名称 | 标识
 | 北京 1 区 | pek1
 | 北京 2 区 | pek2
-| 北京 3  
+| 北京 3 
 | 广东 1 区 | gd1
 | 亚太 1 区 | ap1
 |====
+
 
 
 ==  SSH 密钥
@@ -44,14 +49,20 @@ include::keypair.adoc[]
 include::instance.adoc[]
 
 == SecurityGroup 防火墙
+include::securitygroup.adoc[]
 
 
 == EIP 公网IP
-== VXNet 子网
-== Router 路由
-== LB 负载均衡
-== Redis
+include::eip.adoc[]
 
+== VXNet 子网
+include::vxnet.adoc[]
+
+== Router 路由
+include::router.adoc[]
 
 == Volume 磁盘
 include::/volume.adoc[]
+
+== LB 负载均衡
+== Redis

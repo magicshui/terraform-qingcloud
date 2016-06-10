@@ -52,7 +52,6 @@ a|
 将密钥和一台主机关联在一起。
 
 **示例**
-[source,json]
 ----
 source "qingcloud_keypair_association" "first"{
   instance = "123123"
