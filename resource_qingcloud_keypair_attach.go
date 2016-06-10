@@ -5,8 +5,6 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/magicshui/qingcloud-go/keypair"
 	"strings"
-
-	"log"
 )
 
 func resourceQingcloudKeypairAttach() *schema.Resource {
@@ -66,8 +64,6 @@ func resourceQingcloudKeypairAttachRead(d *schema.ResourceData, meta interface{}
 	params.Verbose.Set(1)
 	resp, err := clt.DescribeKeyPairs(params)
 
-	log.Printf("[QC] Keypair x Instance: %v", resp)
-
 	if err != nil {
 		return err
 	}
@@ -80,14 +76,12 @@ func resourceQingcloudKeypairAttachRead(d *schema.ResourceData, meta interface{}
 	// 如果主机列表为0，代表没有在使用，那么需要重新加载进去
 	if len(resp.KeypairSet[0].InstanceIds) == 0 {
 		d.SetId("")
-		log.Printf("[QC] INSTANCE REMOVED: %s", instanceID)
 		return nil
 	}
 
 	// 判断当前的主机是否在列表中？
 	for _, v := range resp.KeypairSet[0].InstanceIds {
 		if v == instanceID {
-			log.Printf("[QC]  found instance: %s", v)
 			return nil
 		}
 	}

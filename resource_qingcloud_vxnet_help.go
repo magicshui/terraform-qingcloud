@@ -1,7 +1,6 @@
 package qingcloud
 
 import (
-	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/magicshui/qingcloud-go/vxnet"
 )
@@ -23,9 +22,5 @@ func modifyVxnetAttributes(d *schema.ResourceData, meta interface{}, create bool
 		}
 	}
 	_, err := clt.ModifyVxnetAttributes(params)
-	if err != nil {
-		return fmt.Errorf("Error modify vxnet description: %s", err)
-	}
-
-	return nil
+	return err
 }

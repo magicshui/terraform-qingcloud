@@ -3,9 +3,9 @@ EIP 是公网IP。
 
 |====
 | 名称 | 必须 | 解释
-| name |  {y} |
+| name |  {y} | EIP
 | need_icp | {n}  | 是否需要备案
-| bandwidth | {y} | 贷款
-| | |
-| | |
+| bandwidth | {y} | 带宽
+| billing_mode | {n} | 公网IP计费模式：bandwidth 按带宽计费，traffic 按流量计费，默认是 bandwidth
+| need_icp | {n} | 是否需要备案，1为需要，0为不需要，默认是0
 |====

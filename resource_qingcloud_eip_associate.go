@@ -1,6 +1,11 @@
 package qingcloud
 
 import (
+	"log"
+
+	"fmt"
+	"strings"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/magicshui/qingcloud-go/eip"
 	"github.com/magicshui/qingcloud-go/router"
@@ -18,28 +23,24 @@ func resourceQingcloudEipAssociate() *schema.Resource {
 				Required:    true,
 				Description: "公网IP",
 			},
-			"resource_type": &schema.Schema{
+			"resource": &schema.Schema{
 				Type:        schema.TypeString,
-				Required:    true,
-				Description: "资源类型，目前支持 router 和 instance",
-			},
-			"resource_id": &schema.Schema{
-				Type:     schema.TypeString,
-				Optional: true,
+				Optional:    true,
+				Description: "资源 ID，只能设置成 路由 或者 主机",
 			},
 		},
 	}
 }
 
+// NOTE: 不设置ID会导致不能删除数据
 func resourceQingcloudEipAssociateCreate(d *schema.ResourceData, meta interface{}) error {
 	eipID := d.Get("eip").(string)
 	d.SetId(eipID)
 
-	resourceType := d.Get("resource_type").(string)
-	resourceID := d.Get("resource_id").(string)
-	switch resourceType {
-	case "router":
-		// Router
+	resourceID := d.Get("resource").(string)
+	switch strings.Split(resourceID, "-")[0] {
+
+	case "rtr":
 		clt := meta.(*QingCloudClient).router
 		params := router.ModifyRouterAttributesRequest{}
 		params.Eip.Set(eipID)
@@ -49,15 +50,16 @@ func resourceQingcloudEipAssociateCreate(d *schema.ResourceData, meta interface{
 		}
 		return applyRouterUpdates(meta, resourceID)
 
-	default:
-		// instance
+	case "i":
 		clt := meta.(*QingCloudClient).eip
 		params := eip.AssociateEipRequest{}
+		params.Eip.Set(eipID)
 		params.Instance.Set(resourceID)
-		params.Eip.Set(d.Id())
 		if _, err := clt.AssociateEip(params); err != nil {
 			return err
 		}
+		_, err := InstanceTransitionStateRefresh(meta.(*QingCloudClient).instance, resourceID)
+		return err
 	}
 	return nil
 }
@@ -65,45 +67,54 @@ func resourceQingcloudEipAssociateCreate(d *schema.ResourceData, meta interface{
 func resourceQingcloudEipAssociateRead(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).eip
 	params := eip.DescribeEipsRequest{}
-	params.EipsN.Add(d.Id())
-	if resp, err := clt.DescribeEips(params); err != nil {
+	params.EipsN.Add(d.Get("eip").(string))
+	params.Verbose.Set(1)
+
+	resp, err := clt.DescribeEips(params)
+	if err != nil {
 		return err
-	} else {
-		d.Set("resource_type", resp.EipSet[0].Resource.ResourceType)
-		d.Set("resource_id", resp.EipSet[0].Resource.ResourceID)
 	}
 
+	if resp.TotalCount != 1 {
+		return fmt.Errorf("资源不存在")
+	}
+
+	d.Set("resource", resp.EipSet[0].Resource.ResourceID)
 	return nil
 }
 
+// 绑定的资源不能再重新使用，需要删除
 func resourceQingcloudEipAssociateUpdate(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
+// 删除绑定
 func resourceQingcloudEipAssociateDelete(d *schema.ResourceData, meta interface{}) error {
-	resourceType := d.Get("resource_type").(string)
-	resourceID := d.Get("resource_id").(string)
-	switch resourceType {
-	case "router":
+	resourceID := d.Get("resource").(string)
+	eipID := d.Get("eip").(string)
+
+	log.Printf("Resource ID: %s", resourceID)
+
+	switch strings.Split(resourceID, "-")[0] {
+	case "rtr":
 		clt := meta.(*QingCloudClient).router
 		params := router.ModifyRouterAttributesRequest{}
-		params.Eip.Set(d.Id())
+		params.Eip.Set(eipID)
 		params.Router.Set(resourceID)
 		if _, err := clt.ModifyRouterAttributes(params); err != nil {
 			return err
 		}
-		err := applyRouterUpdates(meta, resourceID)
-		if err != nil {
-			return err
-		}
-	default:
+		return applyRouterUpdates(meta, resourceID)
+
+	case "i":
 		clt := meta.(*QingCloudClient).eip
 		params := eip.DissociateEipsRequest{}
-		params.EipsN.Add(d.Id())
+		params.EipsN.Add(eipID)
 		if _, err := clt.DissociateEips(params); err != nil {
 			return err
 		}
+		_, err := InstanceTransitionStateRefresh(meta.(*QingCloudClient).instance, resourceID)
+		return err
 	}
-	d.SetId("")
 	return nil
 }

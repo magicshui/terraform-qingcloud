@@ -1,6 +1,8 @@
 package qingcloud
 
 import (
+	"log"
+
 	"github.com/magicshui/qingcloud-go"
 	"github.com/magicshui/qingcloud-go/cache"
 	"github.com/magicshui/qingcloud-go/eip"
@@ -13,6 +15,10 @@ import (
 	"github.com/magicshui/qingcloud-go/volume"
 	"github.com/magicshui/qingcloud-go/vxnet"
 )
+
+func init() {
+	log.SetPrefix("[QC]")
+}
 
 type Config struct {
 	ID     string

@@ -1,6 +1,7 @@
 package qingcloud
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -17,8 +18,8 @@ func transitionStateRefresh(refreshFunc func() (interface{}, string, error), pen
 		Target:     target,
 		Refresh:    refreshFunc,
 		Timeout:    10 * time.Minute,
-		Delay:      10 * time.Second,
-		MinTimeout: 10 * time.Second,
+		Delay:      5 * time.Second,
+		MinTimeout: 5 * time.Second,
 	}
 	return stateConf.WaitForState()
 }
@@ -33,6 +34,9 @@ func LoadbalancerTransitionStateRefresh(clt *loadbalancer.LOADBALANCER, id strin
 		resp, err := clt.DescribeLoadBalancers(params)
 		if err != nil {
 			return nil, "", err
+		}
+		if resp.TotalCount != 1 {
+			return nil, "", fmt.Errorf("LB not found: %s", id)
 		}
 		return resp.LoadbalancerSet[0], resp.LoadbalancerSet[0].TransitionStatus, nil
 	}
@@ -54,6 +58,9 @@ func EipTransitionStateRefresh(clt *eip.EIP, id string) (interface{}, error) {
 		if err != nil {
 			return nil, "", err
 		}
+		if resp.TotalCount != 1 {
+			return nil, "", fmt.Errorf("Eip not found: %s", id)
+		}
 		return resp.EipSet[0], resp.EipSet[0].TransitionStatus, nil
 	}
 
@@ -72,6 +79,9 @@ func VolumeTransitionStateRefresh(clt *volume.VOLUME, id string) (interface{}, e
 		resp, err := clt.DescribeVolumes(params)
 		if err != nil {
 			return nil, "", err
+		}
+		if resp.TotalCount != 1 {
+			return nil, "", fmt.Errorf("Volume not found: %s", id)
 		}
 		return resp.VolumeSet[0], resp.VolumeSet[0].TransitionStatus, nil
 	}
@@ -98,6 +108,9 @@ func RouterTransitionStateRefresh(clt *router.ROUTER, id string) (interface{}, e
 		if err != nil {
 			return nil, "", err
 		}
+		if resp.TotalCount != 1 {
+			return nil, "", fmt.Errorf("Router not found: %s", id)
+		}
 		return resp.RouterSet[0], resp.RouterSet[0].TransitionStatus, nil
 	}
 
@@ -115,6 +128,9 @@ func InstanceTransitionStateRefresh(clt *instance.INSTANCE, id string) (interfac
 		resp, err := clt.DescribeInstances(params)
 		if err != nil {
 			return nil, "", err
+		}
+		if resp.TotalCount != 1 {
+			return nil, "", fmt.Errorf("Instance not found: %s", id)
 		}
 		return resp.InstanceSet[0], resp.InstanceSet[0].TransitionStatus, nil
 	}

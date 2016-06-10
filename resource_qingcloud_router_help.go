@@ -13,10 +13,8 @@ func applyRouterUpdates(meta interface{}, routerID string) error {
 	if _, err := clt.UpdateRouters(params); err != nil {
 		return err
 	}
-	if _, err := RouterTransitionStateRefresh(clt, routerID); err != nil {
-		return err
-	}
-	return nil
+	_, err := RouterTransitionStateRefresh(clt, routerID)
+	return err
 }
 
 func modifyRouterAttributes(d *schema.ResourceData, meta interface{}, create bool) error {

@@ -111,12 +111,11 @@ func resourceQingcloudVolumeRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("description", resp.VolumeSet[0].Description)
 	d.Set("size", resp.VolumeSet[0].Size)
 
-	d.Set("status", resp.VolumeSet[0].Status)
-	d.Set("instance", resp.VolumeSet[0].Instance)
-
 	return nil
 }
 
+// TODO: 当更改磁盘大小的时候，如果同时取消了关联，那么将会导致首先取消关联，然后大小改变以后，会再关联上，而不会取消
+// 所以取消关联的操作，需要分步进行？
 func resourceQingcloudVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).volume
 
@@ -140,8 +139,9 @@ func resourceQingcloudVolumeUpdate(d *schema.ResourceData, meta interface{}) err
 		}
 		v := resp.VolumeSet[0]
 
-		// 如果正在使用中
+		// 如果正在使用中，首先需要从主机上卸载磁盘
 		if v.Status == "in-use" {
+			// 卸载磁盘
 			params := volume.DetachVolumesRequest{}
 			params.VolumesN.Add(d.Id())
 			params.Instance.Set(v.Instance.InstanceID)
@@ -149,9 +149,11 @@ func resourceQingcloudVolumeUpdate(d *schema.ResourceData, meta interface{}) err
 			if err != nil {
 				return err
 			}
-			// 等待
+			// 等待磁盘状态稳定下来
 			_, err = VolumeTransitionStateRefresh(clt, d.Id())
-			return err
+			if err != nil {
+				return err
+			}
 		}
 
 		// 之前 > 现在，那么就不执行操作，错误提示：磁盘大小只能变大，不能缩小
@@ -168,24 +170,28 @@ func resourceQingcloudVolumeUpdate(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return err
 		}
-		// 等待
-		_, err = VolumeTransitionStateRefresh(clt, d.Id())
-		return err
 
-		if d.Get("status").(string) == "in-use" {
+		// 等待磁盘状态稳定下来
+		_, err = VolumeTransitionStateRefresh(clt, d.Id())
+		if err != nil {
+			return err
+		}
+
+		// 如果磁盘在使用中
+		if v.Status == "in-use" {
 			params := volume.AttachVolumesRequest{}
 			params.VolumesN.Add(d.Id())
-			params.Instance.Set(d.Get("instance").(string))
+			params.Instance.Set(v.Instance.InstanceID)
 			_, err := clt.AttachVolumes(params)
 			if err != nil {
 				return err
 			}
-			// 等待
+			// 等待磁盘稳定下来
 			_, err = VolumeTransitionStateRefresh(clt, d.Id())
-			return err
+			if err != nil {
+				return err
+			}
 		}
-		// 重新加载到主机上
-		return err
 	}
 
 	// 其他信息变化
@@ -211,7 +217,6 @@ func resourceQingcloudVolumeDelete(d *schema.ResourceData, meta interface{}) err
 		return fmt.Errorf("资源已经被删除")
 	}
 	v := resp.VolumeSet[0]
-	d.Set("status", v.Status)
 
 	// 如果在使用中
 	if v.Status == "in-use" {

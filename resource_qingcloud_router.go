@@ -43,6 +43,7 @@ func resourceQingcloudRouter() *schema.Resource {
 				Description: "介绍",
 			},
 
+			// 计算的数据
 			"private_ip": &schema.Schema{
 				Type:     schema.TypeString,
 				Computed: true,
@@ -62,26 +63,29 @@ func resourceQingcloudRouterCreate(d *schema.ResourceData, meta interface{}) err
 	params.SecurityGroup.Set(d.Get("securitygroup").(string))
 	resp, err := clt.CreateRouters(params)
 	if err != nil {
-		return fmt.Errorf("Error create Router ", err)
+		return err
 	}
 	d.SetId(resp.Routers[0])
 
-	qingcloudMutexKV.Lock(d.Id())
-	defer qingcloudMutexKV.Unlock(d.Id())
-
 	_, err = RouterTransitionStateRefresh(clt, d.Id())
 	if err != nil {
-		return fmt.Errorf("Error waiting for router (%s) to start: %s", d.Id(), err)
+		return err
 	}
 
 	if err := modifyRouterAttributes(d, meta, false); err != nil {
 		return err
 	}
+
 	return resourceQingcloudRouterRead(d, meta)
 }
 
 func resourceQingcloudRouterRead(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).router
+
+	_, err := RouterTransitionStateRefresh(clt, d.Id())
+	if err != nil {
+		return err
+	}
 
 	// 设置请求参数
 	params := router.DescribeRoutersRequest{}
@@ -89,12 +93,12 @@ func resourceQingcloudRouterRead(d *schema.ResourceData, meta interface{}) error
 	params.Verbose.Set(1)
 	resp, err := clt.DescribeRouters(params)
 	if err != nil {
-		return fmt.Errorf("Error retrieving Routers: %s", err)
+		return err
 	}
 	if len(resp.RouterSet) == 0 {
-		d.SetId("")
-		return errors.New("not found :" + d.Id())
+		return fmt.Errorf("资源可能我删除了")
 	}
+
 	v := resp.RouterSet[0]
 	d.SetId(v.RouterID)
 	d.Set("name", v.RouterName)
@@ -109,18 +113,17 @@ func resourceQingcloudRouterRead(d *schema.ResourceData, meta interface{}) error
 
 func resourceQingcloudRouterDelete(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).router
-	params := router.DeleteRoutersRequest{}
+
+	// 这里使用的关闭
+	params := router.PowerOffRoutersRequest{}
 	params.RoutersN.Add(d.Id())
-	_, err := clt.DeleteRouters(params)
+	_, err := clt.PowerOffRoutersRequest(params)
 	if err != nil {
 		return err
 	}
 
 	_, err = RouterTransitionStateRefresh(clt, d.Id())
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func resourceQingcloudRouterUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -128,8 +131,11 @@ func resourceQingcloudRouterUpdate(d *schema.ResourceData, meta interface{}) err
 	if !d.HasChange("description") && !d.HasChange("name") {
 		return nil
 	}
-	if _, err := RouterTransitionStateRefresh(clt, d.Id()); err != nil {
+
+	err := modifyRouterAttributes(d, meta, false)
+	if err != nil {
 		return err
 	}
-	return modifyRouterAttributes(d, meta, false)
+	return applyRouterUpdates(meta, d.Id())
+
 }

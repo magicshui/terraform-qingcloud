@@ -22,7 +22,6 @@ provider "qingcloud" {
 <1> API 密钥的ID
 <2> 密钥值
 <3> 可用区，参见可用区表<<zones>>
-
 .可用区表
 [[zones]]
 [options="header"]
@@ -30,10 +29,10 @@ provider "qingcloud" {
 | 名称 | 标识
 | 北京 1 区 | pek1
 | 北京 2 区 | pek2
+| 北京 3  
 | 广东 1 区 | gd1
 | 亚太 1 区 | ap1
 |====
-
 
 
 ==  SSH 密钥
