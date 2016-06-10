@@ -1,7 +1,6 @@
 package qingcloud
 
 import (
-	"errors"
 	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/magicshui/qingcloud-go/router"
@@ -117,7 +116,7 @@ func resourceQingcloudRouterDelete(d *schema.ResourceData, meta interface{}) err
 	// 这里使用的关闭
 	params := router.PowerOffRoutersRequest{}
 	params.RoutersN.Add(d.Id())
-	_, err := clt.PowerOffRoutersRequest(params)
+	_, err := clt.PowerOffRouters(params)
 	if err != nil {
 		return err
 	}
@@ -127,7 +126,6 @@ func resourceQingcloudRouterDelete(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceQingcloudRouterUpdate(d *schema.ResourceData, meta interface{}) error {
-	clt := meta.(*QingCloudClient).router
 	if !d.HasChange("description") && !d.HasChange("name") {
 		return nil
 	}

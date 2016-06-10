@@ -1,6 +1,8 @@
 package qingcloud
 
 import (
+	"log"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/magicshui/qingcloud-go/router"
 )
@@ -19,6 +21,17 @@ func resourceQingcloudRouterStatic() *schema.Resource {
 			"router": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				Description: "需要增加规则的路由器ID	",
+			},
+			"vxnet": &schema.Schema{
+				Type:        schema.TypeString,
+				Description: "vxnet id,only in VPC",
+				Optional:    true,
+			},
+			"type": &schema.Schema{
+				Type:     schema.TypeInt,
+				Required: true,
+				ForceNew: true,
 				Description: `支持的规则类型有：
 					static_type=1：端口转发规则
 					static_type=2：VPN 规则
@@ -29,11 +42,6 @@ func resourceQingcloudRouterStatic() *schema.Resource {
 					static_type=7：三层 IPsec 隧道
 					static_type=8：私网DNS`,
 				ValidateFunc: withinIntRange(1, 8),
-			},
-			"type": &schema.Schema{
-				Type:     schema.TypeInt,
-				Required: true,
-				ForceNew: true,
 			},
 			"val1": &schema.Schema{
 				Type:     schema.TypeString,
@@ -88,10 +96,6 @@ func resourceQingcloudRouterStatic() *schema.Resource {
 
 func resourceQingcloudRouterStaticCreate(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).router
-	// 确保没有在更新
-	if _, err := RouterTransitionStateRefresh(clt, d.Get("router").(string)); err != nil {
-		return err
-	}
 
 	params := router.AddRouterStaticsRequest{}
 	params.Router.Set(d.Get("router").(string))
@@ -100,67 +104,79 @@ func resourceQingcloudRouterStaticCreate(d *schema.ResourceData, meta interface{
 	params.StaticsNVal1.Add(d.Get("val1").(string))
 	params.StaticsNVal2.Add(d.Get("val2").(string))
 	params.StaticsNVal3.Add(d.Get("val3").(string))
-	params.StaticsNVal4.Add(d.Get("val4").(string))
-	params.StaticsNVal5.Add(d.Get("val5").(string))
+	if d.Get("val4") != nil {
+		params.StaticsNVal4.Add(d.Get("val4").(string))
+	}
+	if d.Get("val5") != nil {
+		params.StaticsNVal5.Add(d.Get("val5").(string))
+	}
+
 	resp, err := clt.AddRouterStatics(params)
 	if err != nil {
 		return err
 	}
 	d.SetId(resp.RouterStatics[0])
-
 	return applyRouterUpdates(meta, d.Get("router").(string))
 }
+
 func resourceQingcloudRouterStaticRead(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).router
 	params := router.DescribeRouterStaticsRequest{}
 	params.RouterStaticsN.Add(d.Id())
+	params.Verbose.Set(1)
 	resp, err := clt.DescribeRouterStatics(params)
 	if err != nil {
 		return err
 	}
-	rS := resp.RouterStaticSet[0]
-	d.Set("router", rS.RouterID)
-	d.Set("type", int(rS.StaticType))
-	d.Set("val1", rS.Val1)
-	d.Set("val2", rS.Val2)
-	d.Set("val3", rS.Val3)
-	d.Set("val4", rS.Val4)
-	d.Set("val5", rS.Val5)
+
+	log.Printf("%v", resp)
+
+	r := resp.RouterStaticSet[0]
+	d.Set("router", r.RouterID)
+	d.Set("type", int(r.StaticType))
+	d.Set("val1", r.Val1)
+
+	// 如果是 vpn
+	if d.Get("type").(int) != 2 {
+		d.Set("val2", r.Val2)
+	}
+	d.Set("val3", r.Val3)
+	d.Set("val4", r.Val4)
+	d.Set("val5", r.Val5)
 	return nil
 }
 func resourceQingcloudRouterStaticUpdate(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).router
-	if _, err := RouterTransitionStateRefresh(clt, d.Get("router").(string)); err != nil {
-		return err
+
+	// router 类型不能改变
+	if d.HasChange("router") {
+		return nil
 	}
+
 	params := router.ModifyRouterStaticAttributesRequest{}
 	params.RouterStatic.Set(d.Id())
+
 	params.RouterStaticName.Set(d.Get("name").(string))
 	params.Val1.Set(d.Get("val1").(string))
+
 	params.Val2.Set(d.Get("val2").(string))
 	params.Val3.Set(d.Get("val3").(string))
 	params.Val4.Set(d.Get("val4").(string))
 	params.Val5.Set(d.Get("val5").(string))
-	_, err := clt.ModifyRouterStaticAttributes(params)
-	if err != nil {
+	if _, err := clt.ModifyRouterStaticAttributes(params); err != nil {
+		return err
+	}
+
+	return applyRouterUpdates(meta, d.Get("router").(string))
+}
+
+func resourceQingcloudRouterStaticDelete(d *schema.ResourceData, meta interface{}) error {
+	clt := meta.(*QingCloudClient).router
+
+	params := router.DeleteRouterStaticsRequest{}
+	params.RouterStaticsN.Add(d.Id())
+	if _, err := clt.DeleteRouterStatics(params); err != nil {
 		return err
 	}
 	return applyRouterUpdates(meta, d.Get("router").(string))
-}
-func resourceQingcloudRouterStaticDelete(d *schema.ResourceData, meta interface{}) error {
-	clt := meta.(*QingCloudClient).router
-	if _, err := RouterTransitionStateRefresh(clt, d.Get("router").(string)); err != nil {
-		return err
-	}
-	params := router.DeleteRouterStaticsRequest{}
-	params.RouterStaticsN.Add(d.Id())
-	_, err := clt.DeleteRouterStatics(params)
-	if err != nil {
-		return err
-	}
-	if err = applyRouterUpdates(meta, d.Get("router").(string)); err != nil {
-		return err
-	}
-	d.SetId("")
-	return nil
 }
