@@ -47,27 +47,22 @@ func resourceQingcloudKeypair() *schema.Resource {
 
 func resourceQingcloudKeypairCreate(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).keypair
-
-	// 创建请求参数
 	params := keypair.CreateKeyPairRequest{}
 	params.KeypairName.Set(d.Get("name").(string))
 	params.PublicKey.Set(d.Get("public_key").(string))
 	params.Mode.Set("user")
 	params.EncryptMethod.Set(d.Get("encrypt").(string))
-
 	result, err := clt.CreateKeyPair(params)
 	if err != nil {
 		return fmt.Errorf("Error create Keypair: %s", err)
 	}
 	d.SetId(result.KeypairId)
 
-	// TIP: 如果填写了 description ，那么需要再更新一次密钥的信息
 	return modifyKeypairAttributes(d, meta, false)
 }
 
 func resourceQingcloudKeypairRead(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).keypair
-
 	params := keypair.DescribeKeyPairsRequest{}
 	params.KeypairsN.Add(d.Id())
 	params.Verbose.Set(1)
@@ -77,9 +72,8 @@ func resourceQingcloudKeypairRead(d *schema.ResourceData, meta interface{}) erro
 		return fmt.Errorf("Error retrieving Keypair: %s", err)
 	}
 
-	// TODO: 如果密钥不存在?
 	if len(resp.KeypairSet) == 0 {
-		return err
+		return fmt.Errorf("资源可能不存在了")
 	}
 
 	kp := resp.KeypairSet[0]
@@ -93,12 +87,12 @@ func resourceQingcloudKeypairRead(d *schema.ResourceData, meta interface{}) erro
 func resourceQingcluodKeypairDelete(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).keypair
 
-	// 从所有的主机上删除密钥
-	if err := deleteKeypairFromInstance(meta, d.Id(), d.Get("instance_ids").([]interface{})...); err != nil {
-		return fmt.Errorf("Error %s", err)
-	}
+	// TODO: 不再管理这一个步骤了
+	// // 从所有的主机上删除密钥
+	// if err := deleteKeypairFromInstance(meta, d.Id(), d.Get("instance_ids").([]interface{})...); err != nil {
+	// 	return fmt.Errorf("Error %s", err)
+	// }
 
-	// 删除密钥自身
 	params := keypair.DeleteKeyPairsRequest{}
 	params.KeypairsN.Add(d.Id())
 	_, deleteErr := clt.DeleteKeyPairs(params)

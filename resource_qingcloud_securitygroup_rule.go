@@ -3,7 +3,6 @@ package qingcloud
 import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/magicshui/qingcloud-go/securitygroup"
-	"log"
 )
 
 func resourceQingcloudSecuritygroupRule() *schema.Resource {
@@ -73,9 +72,6 @@ func resourceQingcloudSecuritygroupRuleCreate(d *schema.ResourceData, meta inter
 	params.RulesNSecurityGroupRuleName.Add(d.Get("name").(string))
 	params.RulesNAction.Add(d.Get("action").(string))
 	params.RulesNDirection.Add(int64(d.Get("direction").(int)))
-
-	log.Printf("SG RESULT: %#v", d.Get("val1").(int))
-
 	params.RulesNVal1.Add(int64(d.Get("val1").(int)))
 	params.RulesNVal2.Add(int64(d.Get("val2").(int)))
 	params.RulesNVal3.Add(d.Get("val3").(string))
@@ -111,7 +107,6 @@ func resourceQingcloudSecuritygroupRuleUpdate(d *schema.ResourceData, meta inter
 	params := securitygroup.ModifySecurityGroupRuleAttributesRequest{}
 	params.SecurityGroupRule.Set(d.Id())
 	params.SecurityGroupRuleName.Set(d.Get("name").(string))
-
 	params.Priority.Set(d.Get("priority").(int))
 	params.RuleAction.Set(d.Get("action").(string))
 	params.Direction.Set(d.Get("direction").(int))

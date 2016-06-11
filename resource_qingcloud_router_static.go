@@ -1,8 +1,6 @@
 package qingcloud
 
 import (
-	"log"
-
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/magicshui/qingcloud-go/router"
 )
@@ -96,7 +94,6 @@ func resourceQingcloudRouterStatic() *schema.Resource {
 
 func resourceQingcloudRouterStaticCreate(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).router
-
 	params := router.AddRouterStaticsRequest{}
 	params.Router.Set(d.Get("router").(string))
 	params.StaticsNRouterStaticName.Add(d.Get("name").(string))
@@ -130,8 +127,6 @@ func resourceQingcloudRouterStaticRead(d *schema.ResourceData, meta interface{})
 		return err
 	}
 
-	log.Printf("%v", resp)
-
 	r := resp.RouterStaticSet[0]
 	d.Set("router", r.RouterID)
 	d.Set("type", int(r.StaticType))
@@ -148,18 +143,14 @@ func resourceQingcloudRouterStaticRead(d *schema.ResourceData, meta interface{})
 }
 func resourceQingcloudRouterStaticUpdate(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).router
-
-	// router 类型不能改变
 	if d.HasChange("router") {
 		return nil
 	}
 
 	params := router.ModifyRouterStaticAttributesRequest{}
 	params.RouterStatic.Set(d.Id())
-
 	params.RouterStaticName.Set(d.Get("name").(string))
 	params.Val1.Set(d.Get("val1").(string))
-
 	params.Val2.Set(d.Get("val2").(string))
 	params.Val3.Set(d.Get("val3").(string))
 	params.Val4.Set(d.Get("val4").(string))
@@ -173,7 +164,6 @@ func resourceQingcloudRouterStaticUpdate(d *schema.ResourceData, meta interface{
 
 func resourceQingcloudRouterStaticDelete(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).router
-
 	params := router.DeleteRouterStaticsRequest{}
 	params.RouterStaticsN.Add(d.Id())
 	if _, err := clt.DeleteRouterStatics(params); err != nil {

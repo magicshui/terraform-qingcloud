@@ -46,31 +46,29 @@ func resourceQingcloudKeypairAttachCreate(d *schema.ResourceData, meta interface
 	if err != nil {
 		return err
 	}
-
-	// 密钥的ID: keypair-instance
 	d.SetId(fmt.Sprintf("%s*%s", d.Get("keypair").(string), d.Get("instance").(string)))
+
 	_, err = InstanceTransitionStateRefresh(meta.(*QingCloudClient).instance, d.Get("instance").(string))
 	return err
 }
 
 func resourceQingcloudKeypairAttachRead(d *schema.ResourceData, meta interface{}) error {
-	clt := meta.(*QingCloudClient).keypair
 	keypairID := d.Get("keypair").(string)
 	instanceID := d.Get("instance").(string)
+
+	clt := meta.(*QingCloudClient).keypair
 
 	params := keypair.DescribeKeyPairsRequest{}
 	params.KeypairsN.Add(keypairID)
 	params.InstanceID.Set(instanceID)
 	params.Verbose.Set(1)
 	resp, err := clt.DescribeKeyPairs(params)
-
 	if err != nil {
 		return err
 	}
 
 	if resp.TotalCount == 0 {
-		d.SetId("")
-		return err
+		return fmt.Errorf("资源可能不存在了")
 	}
 
 	// 如果主机列表为0，代表没有在使用，那么需要重新加载进去
@@ -106,7 +104,7 @@ func resourceQingcluodKeypairAttachDelete(d *schema.ResourceData, meta interface
 	if err != nil {
 		return err
 	}
-	// 等待主机的状态改变
+
 	_, err = InstanceTransitionStateRefresh(meta.(*QingCloudClient).instance, instanceID)
 	return err
 }

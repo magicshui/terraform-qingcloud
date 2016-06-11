@@ -54,7 +54,6 @@ func resourceQingcloudRouter() *schema.Resource {
 // resourceQingcloudRouterCreate
 func resourceQingcloudRouterCreate(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).router
-
 	params := router.CreateRoutersRequest{}
 	params.RouterName.Set(d.Get("name").(string))
 	params.RouterType.Set(d.Get("type").(int))
@@ -66,11 +65,6 @@ func resourceQingcloudRouterCreate(d *schema.ResourceData, meta interface{}) err
 	}
 	d.SetId(resp.Routers[0])
 
-	_, err = RouterTransitionStateRefresh(clt, d.Id())
-	if err != nil {
-		return err
-	}
-
 	if err := modifyRouterAttributes(d, meta, false); err != nil {
 		return err
 	}
@@ -80,7 +74,6 @@ func resourceQingcloudRouterCreate(d *schema.ResourceData, meta interface{}) err
 
 func resourceQingcloudRouterRead(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).router
-
 	_, err := RouterTransitionStateRefresh(clt, d.Id())
 	if err != nil {
 		return err
@@ -112,8 +105,6 @@ func resourceQingcloudRouterRead(d *schema.ResourceData, meta interface{}) error
 
 func resourceQingcloudRouterDelete(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).router
-
-	// 这里使用的关闭
 	params := router.PowerOffRoutersRequest{}
 	params.RoutersN.Add(d.Id())
 	_, err := clt.PowerOffRouters(params)

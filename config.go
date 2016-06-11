@@ -16,6 +16,7 @@ import (
 	"github.com/magicshui/qingcloud-go/vxnet"
 )
 
+// TODO: 完成以后删除
 func init() {
 	log.SetPrefix("[QC]")
 }
@@ -42,7 +43,6 @@ type QingCloudClient struct {
 func (c *Config) Client() (*QingCloudClient, error) {
 	clt := qingcloud.NewClient()
 	clt.ConnectToZone(c.Zone, c.ID, c.Secret)
-
 	return &QingCloudClient{
 		eip:           eip.NewClient(clt),
 		keypair:       keypair.NewClient(clt),

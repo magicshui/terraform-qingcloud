@@ -88,7 +88,6 @@ func resourceQingcloudEipRead(d *schema.ResourceData, meta interface{}) error {
 	params := eip.DescribeEipsRequest{}
 	params.EipsN.Add(d.Id())
 	params.Verbose.Set(1)
-
 	resp, err := clt.DescribeEips(params)
 	if err != nil {
 		return err
@@ -114,28 +113,23 @@ func resourceQingcloudEipRead(d *schema.ResourceData, meta interface{}) error {
 
 func resourceQingcloudEipDelete(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).eip
-
 	params := eip.DissociateEipsRequest{}
 	params.EipsN.Add(d.Id())
-
 	_, err := clt.DissociateEips(params)
 	if err != nil {
 		return nil
 	}
 
-	// 等待 EIP 的状态稳定下来
 	_, err = EipTransitionStateRefresh(clt, d.Id())
 	return err
 }
 
 func resourceQingcloudEipUpdate(d *schema.ResourceData, meta interface{}) error {
-	clt := meta.(*QingCloudClient).eip
-
 	if !d.HasChange("name") && !d.HasChange("description") && !d.HasChange("bandwidth") && !d.HasChange("billing_mode") {
 		return nil
 	}
 
-	// TODO: 是否需要添加
+	clt := meta.(*QingCloudClient).eip
 
 	if d.HasChange("bandwidth") {
 		params := eip.ChangeEipsBandwidthRequest{}

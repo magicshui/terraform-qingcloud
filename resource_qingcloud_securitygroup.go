@@ -37,27 +37,23 @@ func resourceQingcloudSecuritygroupCreate(d *schema.ResourceData, meta interface
 	if err != nil {
 		return err
 	}
+
 	d.SetId(resp.SecurityGroupId)
 
-	if d.Get("description").(string) != "" {
+	if d.Get("description") != nil {
 		params := securitygroup.ModifySecurityGroupAttributesRequest{}
 		params.SecurityGroup.Set(resp.SecurityGroupId)
 		params.Description.Set(d.Get("description").(string))
-		_, err := clt.ModifySecurityGroupAttributes(params)
-		return err
+		_, err = clt.ModifySecurityGroupAttributes(params)
 	}
-	return nil
-
+	return err
 }
 
 func resourceQingcloudSecuritygroupRead(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).securitygroup
-
-	// 设置请求参数
 	params := securitygroup.DescribeSecurityGroupsRequest{}
 	params.SecurityGroupsN.Add(d.Id())
 	params.Verbose.Set(1)
-
 	resp, err := clt.DescribeSecurityGroups(params)
 	if err != nil {
 		return err
@@ -65,11 +61,9 @@ func resourceQingcloudSecuritygroupRead(d *schema.ResourceData, meta interface{}
 	if len(resp.SecurityGroupSet) != 1 {
 		return fmt.Errorf("资源可能被删除了")
 	}
-
 	sg := resp.SecurityGroupSet[0]
 	d.Set("name", sg.SecurityGroupName)
 	d.Set("description", sg.Description)
-
 	return nil
 }
 
@@ -85,12 +79,11 @@ func resourceQingcloudSecuritygroupDelete(d *schema.ResourceData, meta interface
 }
 
 func resourceQingcloudSecuritygroupUpdate(d *schema.ResourceData, meta interface{}) error {
-	clt := meta.(*QingCloudClient).securitygroup
-
 	if !d.HasChange("name") && !d.HasChange("description") {
 		return nil
 	}
 
+	clt := meta.(*QingCloudClient).securitygroup
 	params := securitygroup.ModifySecurityGroupAttributesRequest{}
 	if d.HasChange("description") {
 		params.Description.Set(d.Get("description").(string))
@@ -98,7 +91,9 @@ func resourceQingcloudSecuritygroupUpdate(d *schema.ResourceData, meta interface
 	if d.HasChange("name") {
 		params.SecurityGroupName.Set(d.Get("name").(string))
 	}
+
 	params.SecurityGroup.Set(d.Id())
+
 	_, err := clt.ModifySecurityGroupAttributes(params)
 	if err != nil {
 		return err

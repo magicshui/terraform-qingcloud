@@ -18,7 +18,6 @@ func resourceQingcloudCacheParameterGroup() *schema.Resource {
 func resourceQingcloudCacheParameterGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	// clt := meta.(*QingCloudClient).cahce
 	// params:=cache.CreateCacheParameterGroupRequest{}
-	// params.CacheParameterGroupName
 	return nil
 }
 

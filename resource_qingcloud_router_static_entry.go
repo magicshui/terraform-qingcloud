@@ -44,7 +44,6 @@ func resourceQingcloudRouterStaticEntry() *schema.Resource {
 
 func resourceQingcloudRouterStaticEntryCreate(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).router
-
 	params := router.AddRouterStaticEntriesRequest{}
 	params.RouterStatic.Set(d.Get("router_static").(string))
 	params.EntriesNVal1.Add(d.Get("val1").(string))
@@ -63,10 +62,7 @@ func resourceQingcloudRouterStaticEntryCreate(d *schema.ResourceData, meta inter
 }
 
 func resourceQingcloudRouterStaticEntryRead(d *schema.ResourceData, meta interface{}) error {
-	// NOTICE: 青云的这个请求有 bug，使用了 EntryID 但是返回了所有的数据
-
 	clt := meta.(*QingCloudClient).router
-
 	params := router.DescribeRouterStaticEntriesRequest{}
 	params.RouterStaticEntryID.Set(d.Id())
 	resp, err := clt.DescribeRouterStaticEntries(params)

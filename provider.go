@@ -12,17 +12,17 @@ func Provider() terraform.ResourceProvider {
 			"id": &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: descriptions["token"],
+				Description: "青云的 ID ",
 			},
 			"secret": &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: descriptions["secret"],
+				Description: "青云的密钥",
 			},
 			"zone": &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: descriptions["zone"],
+				Description: "青云的 zone ",
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
@@ -47,8 +47,6 @@ func Provider() terraform.ResourceProvider {
 
 			"qingcloud_mongo": resourceQingcloudMongo(),
 
-			// "resource_qingcloud_cache_parametergroup": resourceQingcloudCacheParameterGroup(),
-
 			"qingcloud_volume":            resourceQingcloudVolume(),
 			"qingcloud_volume_attachment": resourceQingcloudVolumeAttachment(),
 
@@ -57,6 +55,8 @@ func Provider() terraform.ResourceProvider {
 			"qingcloud_loadbalancer_backend":     resourceQingcloudLoadbalancerBackend(),
 			"qingcloud_loadbalancer_policy":      resourceQingcloudLoadbalancerPloicy(),
 			"qingcloud_loadbalancer_policy_rule": resourceQingcloudLoadbalancerPloicyRule(),
+
+			"qingcloud_server_certificate": resourceQingcloudServerCertificate(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
@@ -71,14 +71,4 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		Zone:   d.Get("zone").(string),
 	}
 	return config.Client()
-}
-
-var descriptions map[string]string
-
-func init() {
-	descriptions = map[string]string{
-		"id":     "青云的 ID ",
-		"secret": "青云的密钥",
-		"zone":   "青云的 zone ",
-	}
 }

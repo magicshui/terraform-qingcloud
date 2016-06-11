@@ -1,8 +1,6 @@
 package qingcloud
 
 import (
-	"log"
-
 	"fmt"
 	"strings"
 
@@ -47,7 +45,6 @@ func volumeAttachmentID(d *schema.ResourceData) string {
 
 func resourceQingcloudVolumeAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).volume
-
 	params := volume.AttachVolumesRequest{}
 	params.Instance.Set(d.Get("instance").(string))
 	params.VolumesN.Add(d.Get("volume").(string))
@@ -64,7 +61,6 @@ func resourceQingcloudVolumeAttachmentCreate(d *schema.ResourceData, meta interf
 
 func resourceQingcloudVolumeAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).volume
-
 	params := volume.DescribeVolumesRequest{}
 	params.VolumesN.Add(d.Get("volume").(string))
 	params.Verbose.Set(1)
@@ -84,20 +80,9 @@ func resourceQingcloudVolumeAttachmentRead(d *schema.ResourceData, meta interfac
 // NOTE: 磁盘将只会卸载而不会删除，防止误删除的情况发生
 func resourceQingcloudVolumeAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).volume
-
 	params := volume.DetachVolumesRequest{}
-	// 这个时候不能这样计算了
 	params.Instance.Set(d.Get("instance").(string))
 	params.VolumesN.Add(d.Get("volume").(string))
-
-	log.Printf("volume attachment id: %s", d.Id())
-
-	// volumeID := strings.Split(d.Id(), "*")[0]
-	// instanceID := strings.Split(d.Id(), "*")[1]
-	// params.Instance.Set(instanceID)
-	// params.VolumesN.Add(volumeID)
-
-	// 解绑磁盘
 	_, err := clt.DetachVolumes(params)
 	if err != nil {
 		// 这个防止界面上删除的情况发生
@@ -107,7 +92,6 @@ func resourceQingcloudVolumeAttachmentDelete(d *schema.ResourceData, meta interf
 		return err
 	}
 
-	// 注意 ID
 	_, err = VolumeTransitionStateRefresh(clt, d.Get("volume").(string))
 	return err
 }

@@ -36,7 +36,6 @@ func resourceQingcloudVxnet() *schema.Resource {
 
 func resourceQingcloudVxnetCreate(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).vxnet
-
 	params := vxnet.CreateVxnetsRequest{}
 	params.VxnetName.Set(d.Get("name").(string))
 	params.VxnetType.Set(d.Get("type").(int))

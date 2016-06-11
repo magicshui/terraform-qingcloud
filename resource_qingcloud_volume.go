@@ -59,19 +59,16 @@ func changeQingcloudVolumeAttributes(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return err
 	}
-	// 等待磁盘状态静止
 	_, err = VolumeTransitionStateRefresh(meta.(*QingCloudClient).volume, d.Id())
 	return err
 }
 
 func resourceQingcloudVolumeCreate(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).volume
-
 	params := volume.CreateVolumesRequest{}
 	params.Size.Set(d.Get("size").(int))
 	params.VolumeName.Set(d.Get("name").(string))
 	params.VolumeType.Set(d.Get("type").(int))
-
 	resp, err := clt.CreateVolumes(params)
 	if err != nil {
 		return err
@@ -79,11 +76,8 @@ func resourceQingcloudVolumeCreate(d *schema.ResourceData, meta interface{}) err
 	if len(resp.Volumes) != 1 {
 		return fmt.Errorf("volumes response is not 1")
 	}
-
-	// 设置 ID
 	d.SetId(resp.Volumes[0])
 
-	// 修改硬盘的属性
 	if err := changeQingcloudVolumeAttributes(d, meta); err != nil {
 		return err
 	}
@@ -94,7 +88,6 @@ func resourceQingcloudVolumeCreate(d *schema.ResourceData, meta interface{}) err
 
 func resourceQingcloudVolumeRead(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).volume
-
 	params := volume.DescribeVolumesRequest{}
 	params.VolumesN.Add(d.Id())
 	params.Verbose.Set(1)
@@ -117,14 +110,14 @@ func resourceQingcloudVolumeRead(d *schema.ResourceData, meta interface{}) error
 // TODO: 当更改磁盘大小的时候，如果同时取消了关联，那么将会导致首先取消关联，然后大小改变以后，会再关联上，而不会取消
 // 所以取消关联的操作，需要分步进行？
 func resourceQingcloudVolumeUpdate(d *schema.ResourceData, meta interface{}) error {
-	clt := meta.(*QingCloudClient).volume
-
 	if !d.HasChange("size") && !d.HasChange("description") && d.HasChange("name") {
 		return nil
 	}
 
-	// 如果磁盘的大小改变了
+	clt := meta.(*QingCloudClient).volume
 	if d.HasChange("size") {
+		// 如果磁盘的大小改变了
+
 		// TODO: 如果其他的状态怎么整？
 		// 判断有没有加载到主机？
 		params := volume.DescribeVolumesRequest{}
