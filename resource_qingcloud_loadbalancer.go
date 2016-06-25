@@ -63,30 +63,49 @@ func resourceQingcloudLoadbalancerCreate(d *schema.ResourceData, meta interface{
 		return err
 	}
 	d.SetId(resp.LoadbalancerId)
-	_, err = LoadbalancerTransitionStateRefresh(clt, d.Id())
-	if err != nil {
-		return err
-	}
+
 	return resourceQingcloudLoadbalancerRead(d, meta)
 }
 func resourceQingcloudLoadbalancerRead(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).loadbalancer
+	_, err := LoadbalancerTransitionStateRefresh(clt, d.Id())
+	if err != nil {
+		return err
+	}
+
 	params := loadbalancer.DescribeLoadBalancersRequest{}
 	params.LoadbalancersN.Add(d.Id())
 	resp, err := clt.DescribeLoadBalancers(params)
 	if err != nil {
 		return err
 	}
+
 	if len(resp.LoadbalancerSet) == 0 {
 		return errors.New("no load balancer")
 	}
+
 	lb := resp.LoadbalancerSet[0]
 	d.Set("private_ip", lb.Vxnet.PrivateIP)
 	return nil
 }
 
+// TODO: 更新数据
 func resourceQingcloudLoadbalancerUpdate(d *schema.ResourceData, meta interface{}) error {
-	return nil
+	clt := meta.(*QingCloudClient).loadbalancer
+	params := loadbalancer.ModifyLoadBalancerAttributesRequest{}
+	params.Loadbalancer.Set(d.Id())
+	params.LoadbalancerName.Set(d.Get("name").(string))
+	params.SecurityGroup.Set(d.Get("securitygroup").(string))
+	params.Description.Set(d.Get("description").(string))
+	params.PrivateIp.Set(d.Get("private_ip").(string))
+	_, err := clt.ModifyLoadBalancerAttributes(params)
+	if err != nil {
+		return err
+	}
+
+	// TODO:
+	_, err = LoadbalancerTransitionStateRefresh(clt, d.Id())
+	return err
 }
 
 func resourceQingcloudLoadbalancerDelete(d *schema.ResourceData, meta interface{}) error {

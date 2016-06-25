@@ -123,9 +123,7 @@ func resourceQingcloudInstanceRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("class", k.InstanceClass)
 	d.Set("name", k.InstanceName)
 	d.Set("image", k.Image.ImageID)
-
 	d.Set("status", k.Status)
-
 	d.SetId(k.InstanceID)
 
 	return nil

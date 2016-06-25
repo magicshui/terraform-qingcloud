@@ -2,10 +2,7 @@
 magicshui<shuiyuzhe@gmail.com>
 v0.1,2016-06-10, first version
 
-
 :toc:
-
-
 :sectnums:
 :icons: font
 :y: icon:check[role="green"]
@@ -14,8 +11,19 @@ v0.1,2016-06-10, first version
 :pygments-style: manni
 :pygments-linenums-mode: inline
 
-为了使用 Terraform QingCloud ，需要在后台拿到 https://console.qingcloud.com/access_keys/[API 密钥]，你需要提供如下信息：
+'''
 
+
+== 基础配置
+
+[CAUTION]
+====
+正在开发中，不要在生产环境中使用。
+====
+
+
+为了使用 Terraform QingCloud ，需要在后台拿到 https://console.qingcloud.com/access_keys/[API 密钥]，
+基础的认证信息配置如下：
 ----
 provider "qingcloud" {
 	id = "yourID" // <1>
@@ -25,19 +33,11 @@ provider "qingcloud" {
 ----
 <1> API 密钥的ID
 <2> 密钥值
-<3> 可用区，参见可用区表<<zones>>
-.可用区表
-[[zones]]
-[options="header"]
-|====
-| 名称 | 标识
-| 北京 1 区 | pek1
-| 北京 2 区 | pek2
-| 北京 3 
-| 广东 1 区 | gd1
-| 亚太 1 区 | ap1
-|====
-
+<3> **可用区，参见可用区表**: +
+ 北京 1 区, `pek1` +
+ 北京 2 区, `pek2` +
+ 广东 1 区, `gd1` +
+ 亚太 1 区, `ap1`
 
 
 ==  SSH 密钥

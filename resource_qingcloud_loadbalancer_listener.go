@@ -100,6 +100,7 @@ func resourceQingcloudLoadbalancerListenerCreate(d *schema.ResourceData, meta in
 	}
 	lb := resp.LoadbalancerListeners[0]
 	d.SetId(lb)
+
 	return nil
 }
 

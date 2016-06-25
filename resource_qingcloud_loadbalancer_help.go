@@ -24,6 +24,7 @@ func applyLoadBalancerPolicy(meta interface{}, id string) error {
 	if err != nil {
 		return err
 	}
-	_, err = LoadbalancerTransitionStateRefresh(clt, id)
 	return err
+	// _, err = LoadbalancerTransitionStateRefresh(clt, id)
+	// return err
 }

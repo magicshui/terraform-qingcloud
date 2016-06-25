@@ -69,19 +69,15 @@ func resourceQingcloudEipCreate(d *schema.ResourceData, meta interface{}) error 
 		return err
 	}
 	d.SetId(resp.Eips[0])
-
 	if err := modifyEipAttributes(d, meta, true); err != nil {
 		return err
 	}
-
-	// 配置一下
 	return resourceQingcloudEipRead(d, meta)
 }
 
 func resourceQingcloudEipRead(d *schema.ResourceData, meta interface{}) error {
 	clt := meta.(*QingCloudClient).eip
-	_, err := EipTransitionStateRefresh(clt, d.Id())
-	if err != nil {
+	if _, err := EipTransitionStateRefresh(clt, d.Id());err!=nil{
 		return err
 	}
 
@@ -98,7 +94,6 @@ func resourceQingcloudEipRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	e := resp.EipSet[0]
-
 	d.Set("name", e.EipName)
 	d.Set("description", e.Description)
 	d.Set("billing_mode", e.BillingMode)
@@ -107,7 +102,6 @@ func resourceQingcloudEipRead(d *schema.ResourceData, meta interface{}) error {
 	// 自动计算
 	d.SetId(e.EipID)
 	d.Set("addr", e.EipAddr)
-
 	return nil
 }
 
@@ -115,12 +109,10 @@ func resourceQingcloudEipDelete(d *schema.ResourceData, meta interface{}) error 
 	clt := meta.(*QingCloudClient).eip
 	params := eip.DissociateEipsRequest{}
 	params.EipsN.Add(d.Id())
-	_, err := clt.DissociateEips(params)
-	if err != nil {
+	if _, err := clt.DissociateEips(params);err!=nil{
 		return nil
 	}
-
-	_, err = EipTransitionStateRefresh(clt, d.Id())
+	_, err := EipTransitionStateRefresh(clt, d.Id())
 	return err
 }
 

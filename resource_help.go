@@ -10,7 +10,6 @@ func withinArrayString(limits ...string) func(v interface{}, k string) (ws []str
 	for _, v := range limits {
 		limitsMap[v] = true
 	}
-
 	return func(v interface{}, k string) (ws []string, errors []error) {
 		value := v.(string)
 		if limitsMap[value] {

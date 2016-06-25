@@ -31,3 +31,7 @@ api.md
 /doc/render
 /debug
 build.sh
+.idea/misc.xml
+.idea/modules.xml
+.idea/terraform-qingcloud.iml
+.idea/workspace.xml

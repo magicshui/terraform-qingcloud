@@ -1,6 +1,6 @@
 === 创建密钥
 
-**示例**
+.示例
 ----
 resource "qingcloud_keypair" "arthur"{
 	name = "arthur"
@@ -11,12 +11,8 @@ resource "qingcloud_keypair" "arthur"{
 
 <1> 可以通过 Terraform 默认带有的函数来读取本地的文件
 
-[NOTE]
-====
-不支持青云创建的方式，只允许用户创建。
-====
 
-**参数**
+.参数
 [options="header"]
 |====
 | 名称 | 必选 | 类型
@@ -26,17 +22,15 @@ resource "qingcloud_keypair" "arthur"{
 |====
 
 
-**暴露值**
+.输出
 [options="header"]
 |====
 | 名称 | 说明
-
 | ID
 a|
-----
+....
 密钥的 ID <1>
-----
-
+....
 |====
 
 <1> 在关联密钥的时候可以使用
@@ -45,13 +39,14 @@ a|
 只能修改密钥的`name`和`description`。
 
 ===  删除密钥
-当密钥被删除之前，将会自动寻找使用此密钥的主机，并从主机进行解绑，所有主机解绑成功以后将会删除密钥。
+当秘钥被删除，需要首先解绑所有秘钥。
 
+WARNING: 不具备自动解绑秘钥的功能
 
 === 密钥关联
 将密钥和一台主机关联在一起。
 
-**示例**
+.示例
 ----
 source "qingcloud_keypair_association" "first"{
   instance = "123123"
@@ -59,7 +54,7 @@ source "qingcloud_keypair_association" "first"{
 }
 ----
 
-**参数**
+.参数
 [options="header"]
 |====
 | 名称 | 必选 | 解释
@@ -67,12 +62,10 @@ source "qingcloud_keypair_association" "first"{
 | keypair | {y} | 密钥 ID
 |====
 
-**暴露**
-.
+.输出
 [options="header"]
 |====
 | 名称 | 说明
-
 |  id
 a|
 ----
@@ -80,7 +73,7 @@ a|
 ----
 
 |====
-<1> ID 生成的规则是：`keypairId*instanceID`，这个是`Terraform Qingcloud`为了方便管理资源规定的，不是青云的规则。
+<1> ID 生成的规则是：`keypairId * instanceID`，这个是`Terraform Qingcloud`为了方便管理资源规定的，不是青云的规则。
 
 
 ==== 删除关联

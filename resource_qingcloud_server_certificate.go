@@ -25,10 +25,12 @@ func resourceQingcloudServerCertificate() *schema.Resource {
 			"content": &schema.Schema{
 				Type:        schema.TypeString,
 				Description: "证书内容",
+				Required:    true,
 			},
 			"private_key": &schema.Schema{
 				Type:        schema.TypeString,
 				Description: "服务器证书私钥",
+				Required:    true,
 			},
 		},
 	}

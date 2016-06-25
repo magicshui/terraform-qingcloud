@@ -52,7 +52,6 @@ resource "qingcloud_instance" "init"{
 
 
 resource "qingcloud_eip_associate" "init"{
-	resource_type = "instance"
-	resource_id = "${qingcloud_instance.init.id}"
+	resource = "${qingcloud_instance.init.id}"
 	eip = "${qingcloud_eip.init.id}"
 }

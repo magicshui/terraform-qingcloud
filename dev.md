@@ -4,15 +4,16 @@ provider.go 中 添加：
 
 ```
 ResourcesMap: map[string]*schema.Resource{
-			// "qingcloud_eip":     resourceQingcloudEip(),
-			"qingcloud_keypair":       resourceQingcloudKeypair(),
-			"qingcloud_securitygroup": resourceQingcloudSecuritygroup(),
-		},
-		ConfigureFunc: providerConfigure,
-	}
+    "qingcloud_keypair":       resourceQingcloudKeypair(),
+		"qingcloud_securitygroup": resourceQingcloudSecuritygroup(),
+	},
+	ConfigureFunc: providerConfigure,
+}
 ```
 -------------------------
+
 config.go 中 添加：
+
 ```
 type QingCloudClient struct {
 	eip           *eip.EIP

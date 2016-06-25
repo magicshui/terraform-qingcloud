@@ -50,7 +50,7 @@ func resourceQingcloudLoadbalancerPloicyRuleCreate(d *schema.ResourceData, meta 
 		return err
 	}
 	d.SetId(resp.LoadbalancerPoliciyRules[0])
-	return nil
+	return applyLoadBalancerPolicy(meta, d.Get("policy").(string))
 }
 
 func resourceQingcloudLoadbalancerPloicyRuleRead(d *schema.ResourceData, meta interface{}) error {
@@ -64,12 +64,21 @@ func resourceQingcloudLoadbalancerPloicyRuleRead(d *schema.ResourceData, meta in
 	lp := resp.LoadbalancerPoliciyRule[0]
 	d.Set("type", lp.RuleType)
 	d.Set("val", lp.Val)
-	d.Set("policy", lp.LoadbalancerPolicyID)
+	d.Set("name", lp.LoadbalancerPolicyRuleName)
 	return nil
 }
 
 func resourceQingcloudLoadbalancerPloicyRuleUpdate(d *schema.ResourceData, meta interface{}) error {
-	return nil
+	clt := meta.(*QingCloudClient).loadbalancer
+	params := loadbalancer.ModifyLoadBalancerPolicyRuleAttributesRequest{}
+	params.LoadbalancerPolicyRule.Set(d.Id())
+	params.LoadbalancerPolicyRuleName.Set(d.Get("name").(string))
+	params.Val.Set(d.Get("val").(string))
+	_, err := clt.ModifyLoadBalancerPolicyRuleAttributes(params)
+	if err != nil {
+		return err
+	}
+	return applyLoadBalancerPolicy(meta, d.Get("policy").(string))
 }
 
 func resourceQingcloudLoadbalancerPloicyRuleDelete(d *schema.ResourceData, meta interface{}) error {
@@ -80,6 +89,5 @@ func resourceQingcloudLoadbalancerPloicyRuleDelete(d *schema.ResourceData, meta 
 	if err != nil {
 		return err
 	}
-	d.SetId("")
-	return nil
+	return applyLoadBalancerPolicy(meta, d.Get("policy").(string))
 }
